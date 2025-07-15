@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h2>Player Event Summary</h2>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Player</th>
+      <th>Passes</th>
+      <th>Shots</th>
+      <th>Dribbles</th>
+      <th>Tackles</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for player in players %}
+    <tr>
+      <td>{{ player.player_name }}</td>
+      <td>{{ player.passes }}</td>
+      <td>{{ player.shots }}</td>
+      <td>{{ player.dribbles }}</td>
+      <td>{{ player.tackles }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h2>Match Events</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Player</th>
+            <th>Team</th>
+            <th>Event Type</th>
+            <th>Minute</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in events %}
+        <tr>
+            <td>{{ event.player_name }}</td>
+            <td>{{ event.team_name }}</td>
+            <td>{{ event.type_name }}</td>
+            <td>{{ event.minute }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

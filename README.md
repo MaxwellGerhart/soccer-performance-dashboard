@@ -17,6 +17,6 @@ A web application for analyzing and visualizing soccer performance data using St
 ## Setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/soccer-performance-dashboard.git
+git clone https://github.com/MaxwellGerhart/soccer-performance-dashboard.git
 cd soccer-performance-dashboard
 pip install -r requirements.txt
