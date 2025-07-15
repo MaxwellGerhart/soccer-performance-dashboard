@@ -1,13 +1,21 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('home') }}" class="btn btn-primary">
+    <i class="fas fa-home"></i> Home
+  </a>
+</div>
+
 <h2>Team Statistics</h2>
-<table class="table table-striped">
+<table class="table table-striped" id="teamsTable">
   <thead>
     <tr>
-      <th>Team</th>
-      <th>Total Shots</th>
-      <th>Total Passes</th>
+      <th onclick="sortTable(0, 'string')" style="cursor: pointer;">Team <i class="fas fa-sort"></i></th>
+      <th onclick="sortTable(1, 'number')" style="cursor: pointer;">Total Shots <i class="fas fa-sort"></i></th>
+      <th onclick="sortTable(2, 'number')" style="cursor: pointer;">Total Passes <i class="fas fa-sort"></i></th>
+      <th onclick="sortTable(3, 'number')" style="cursor: pointer;">Total Tackles <i class="fas fa-sort"></i></th>
+      <th onclick="sortTable(4, 'number')" style="cursor: pointer;">Total Interceptions <i class="fas fa-sort"></i></th>
     </tr>
   </thead>
   <tbody>
@@ -16,8 +24,56 @@
       <td>{{ team.team_name }}</td>
       <td>{{ team.total_shots }}</td>
       <td>{{ team.total_passes }}</td>
+      <td>{{ team.total_tackles }}</td>
+      <td>{{ team.total_interceptions }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+
+<script>
+let sortDirection = {};
+
+function sortTable(columnIndex, dataType) {
+  const table = document.getElementById('teamsTable');
+  const tbody = table.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  
+  // Toggle sort direction
+  sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+  
+  rows.sort((a, b) => {
+    const aValue = a.cells[columnIndex].textContent.trim();
+    const bValue = b.cells[columnIndex].textContent.trim();
+    
+    let comparison = 0;
+    if (dataType === 'number') {
+      comparison = parseInt(aValue) - parseInt(bValue);
+    } else {
+      comparison = aValue.localeCompare(bValue);
+    }
+    
+    return sortDirection[columnIndex] === 'asc' ? comparison : -comparison;
+  });
+  
+  // Clear tbody and append sorted rows
+  tbody.innerHTML = '';
+  rows.forEach(row => tbody.appendChild(row));
+  
+  // Update sort icons
+  updateSortIcons(columnIndex);
+}
+
+function updateSortIcons(activeColumn) {
+  const headers = document.querySelectorAll('#teamsTable th');
+  headers.forEach((header, index) => {
+    const icon = header.querySelector('i');
+    if (index === activeColumn) {
+      icon.className = sortDirection[activeColumn] === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+    } else {
+      icon.className = 'fas fa-sort';
+    }
+  });
+}
+</script>
 {% endblock %}

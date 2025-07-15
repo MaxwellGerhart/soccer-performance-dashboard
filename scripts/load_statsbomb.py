@@ -29,8 +29,8 @@ def load_all_events(match_ids):
 
 
 if __name__ == "__main__":
-    comp_id = 9  
-    season_id = 281
+    comp_id = 43  
+    season_id = 106
 
     match_ids = get_match_ids(comp_id, season_id)
     print(f"Found {len(match_ids)} matches")

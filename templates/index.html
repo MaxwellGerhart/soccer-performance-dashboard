@@ -1,8 +1,151 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<p>Welcome to the soccer performance dashboard.</p>
-<a href="/events" class="btn btn-primary">View Event Data</a>
-<a href="/players" class="btn btn-secondary">View Player Activity</a>
-<a href="/teams" class="btn btn-success">View Team Statistics</a>
+<div class="row">
+  <div class="col-md-8">
+    <div class="jumbotron bg-primary text-white p-4 rounded mb-4">
+      <h1 class="display-4">World Cup 2022 Dashboard</h1>
+      <p class="lead">Explore comprehensive statistics and insights from the 2022 FIFA World Cup matches.</p>
+    </div>
+    
+    <!-- Key Statistics Cards -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card text-center bg-info text-white">
+          <div class="card-body">
+            <h5 class="card-title">{{ "{:,}".format(total_events) }}</h5>
+            <p class="card-text">Total Events</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+          <div class="card-body">
+            <h5 class="card-title">{{ total_teams }}</h5>
+            <p class="card-text">Teams</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center bg-warning text-white">
+          <div class="card-body">
+            <h5 class="card-title">{{ total_players }}</h5>
+            <p class="card-text">Players</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center bg-danger text-white">
+          <div class="card-body">
+            <h5 class="card-title">{{ total_goals }}</h5>
+            <p class="card-text">Goals Scored</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Navigation Buttons -->
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <a href="/players" class="btn btn-secondary btn-lg btn-block w-100">
+          <i class="fas fa-user"></i> View Player Statistics
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="/teams" class="btn btn-success btn-lg btn-block w-100">
+          <i class="fas fa-users"></i> View Team Statistics
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="/events" class="btn btn-info btn-lg btn-block w-100">
+          <i class="fas fa-list"></i> View Match Events
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <!-- Top Goal Scorers -->
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-trophy"></i> Top Goal Scorers</h5>
+      </div>
+      <div class="card-body">
+        <div class="list-group list-group-flush">
+          {% for player in top_players %}
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            {{ player.player_name }}
+            <span class="badge bg-primary text-white">{{ player.goals }} goals</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Top Scoring Teams -->
+    <div class="card mb-4">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="fas fa-futbol"></i> Top Scoring Teams</h5>
+      </div>
+      <div class="card-body">
+        <div class="list-group list-group-flush">
+          {% for team in top_teams %}
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            {{ team.team_name }}
+            <span class="badge bg-success text-white">{{ team.goals }} goals</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="card">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-clock"></i> Recent Activity</h5>
+      </div>
+      <div class="card-body">
+        <div class="list-group list-group-flush">
+          {% for event in recent_events[:5] %}
+          <div class="list-group-item">
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">{{ event.player_name }}</h6>
+              <small>{{ event.minute }}'</small>
+            </div>
+            <p class="mb-1">{{ event.type_name }}</p>
+            <small class="text-muted">{{ event.team_name }}</small>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.jumbotron {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.card {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+.btn-block {
+  margin-bottom: 10px;
+}
+.badge {
+  font-size: 0.9em;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-weight: 600;
+}
+.badge.bg-primary {
+  background-color: #0d6efd !important;
+  color: white !important;
+}
+.badge.bg-success {
+  background-color: #198754 !important;
+  color: white !important;
+}
+</style>
 {% endblock %}

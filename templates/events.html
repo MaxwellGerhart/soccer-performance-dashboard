@@ -1,14 +1,22 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('home') }}" class="btn btn-primary">
+    <i class="fas fa-home"></i> Home
+  </a>
+</div>
+
 <h2>Match Events</h2>
-<table class="table table-striped">
+<p class="text-muted">Recent 100 events from World Cup 2022 matches</p>
+
+<table class="table table-striped" id="eventsTable">
     <thead>
         <tr>
-            <th>Player</th>
-            <th>Team</th>
-            <th>Event Type</th>
-            <th>Minute</th>
+            <th onclick="sortTable(0, 'string')" style="cursor: pointer;">Player <i class="fas fa-sort"></i></th>
+            <th onclick="sortTable(1, 'string')" style="cursor: pointer;">Team <i class="fas fa-sort"></i></th>
+            <th onclick="sortTable(2, 'string')" style="cursor: pointer;">Event Type <i class="fas fa-sort"></i></th>
+            <th onclick="sortTable(3, 'number')" style="cursor: pointer;">Minute <i class="fas fa-sort"></i></th>
         </tr>
     </thead>
     <tbody>
@@ -16,10 +24,68 @@
         <tr>
             <td>{{ event.player_name }}</td>
             <td>{{ event.team_name }}</td>
-            <td>{{ event.type_name }}</td>
-            <td>{{ event.minute }}</td>
+            <td>
+                {% if event.type_name == 'Shot' %}
+                    <span class="badge badge-warning">{{ event.type_name }}</span>
+                {% elif event.type_name == 'Pass' %}
+                    <span class="badge badge-primary">{{ event.type_name }}</span>
+                {% elif event.type_name == 'Dribble' %}
+                    <span class="badge badge-info">{{ event.type_name }}</span>
+                {% elif event.type_name == 'Tackle' %}
+                    <span class="badge badge-danger">{{ event.type_name }}</span>
+                {% else %}
+                    <span class="badge badge-secondary">{{ event.type_name }}</span>
+                {% endif %}
+            </td>
+            <td>{{ event.minute }}'</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
+<script>
+let sortDirection = {};
+
+function sortTable(columnIndex, dataType) {
+  const table = document.getElementById('eventsTable');
+  const tbody = table.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  
+  // Toggle sort direction
+  sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+  
+  rows.sort((a, b) => {
+    const aValue = a.cells[columnIndex].textContent.trim();
+    const bValue = b.cells[columnIndex].textContent.trim();
+    
+    let comparison = 0;
+    if (dataType === 'number') {
+      comparison = parseInt(aValue) - parseInt(bValue);
+    } else {
+      comparison = aValue.localeCompare(bValue);
+    }
+    
+    return sortDirection[columnIndex] === 'asc' ? comparison : -comparison;
+  });
+  
+  // Clear tbody and append sorted rows
+  tbody.innerHTML = '';
+  rows.forEach(row => tbody.appendChild(row));
+  
+  // Update sort icons
+  updateSortIcons(columnIndex);
+}
+
+function updateSortIcons(activeColumn) {
+  const headers = document.querySelectorAll('#eventsTable th');
+  headers.forEach((header, index) => {
+    const icon = header.querySelector('i');
+    if (index === activeColumn) {
+      icon.className = sortDirection[activeColumn] === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+    } else {
+      icon.className = 'fas fa-sort';
+    }
+  });
+}
+</script>
 {% endblock %}

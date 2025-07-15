@@ -1,15 +1,23 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('home') }}" class="btn btn-primary">
+    <i class="fas fa-home"></i> Home
+  </a>
+</div>
+
 <h2>Player Event Summary</h2>
-<table class="table table-striped">
+<table class="table table-striped" id="playersTable">
   <thead>
     <tr>
-      <th>Player</th>
-      <th>Passes</th>
-      <th>Shots</th>
-      <th>Dribbles</th>
-      <th>Tackles</th>
+      <th onclick="sortTable(0, 'string')" style="cursor: pointer;">Player <i class="fas fa-sort"></i></th>
+      <th onclick="sortTable(1, 'number')" style="cursor: pointer;">Passes <i class="fas fa-sort"></i></th>
+      <th onclick="sortTable(2, 'number')" style="cursor: pointer;">Shots <i class="fas fa-sort"></i></th>
+      <th onclick="sortTable(3, 'number')" style="cursor: pointer;">Dribbles <i class="fas fa-sort"></i></th>
+      <th onclick="sortTable(4, 'number')" style="cursor: pointer;">Tackles <i class="fas fa-sort"></i></th>
+      <th onclick="sortTable(5, 'number')" style="cursor: pointer;">Interceptions <i class="fas fa-sort"></i></th>
+      <th onclick="sortTable(6, 'number')" style="cursor: pointer;">Ball Recoveries <i class="fas fa-sort"></i></th>
     </tr>
   </thead>
   <tbody>
@@ -20,8 +28,56 @@
       <td>{{ player.shots }}</td>
       <td>{{ player.dribbles }}</td>
       <td>{{ player.tackles }}</td>
+      <td>{{ player.interceptions }}</td>
+      <td>{{ player.ball_recoveries }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+
+<script>
+let sortDirection = {};
+
+function sortTable(columnIndex, dataType) {
+  const table = document.getElementById('playersTable');
+  const tbody = table.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  
+  // Toggle sort direction
+  sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+  
+  rows.sort((a, b) => {
+    const aValue = a.cells[columnIndex].textContent.trim();
+    const bValue = b.cells[columnIndex].textContent.trim();
+    
+    let comparison = 0;
+    if (dataType === 'number') {
+      comparison = parseInt(aValue) - parseInt(bValue);
+    } else {
+      comparison = aValue.localeCompare(bValue);
+    }
+    
+    return sortDirection[columnIndex] === 'asc' ? comparison : -comparison;
+  });
+  
+  // Clear tbody and append sorted rows
+  tbody.innerHTML = '';
+  rows.forEach(row => tbody.appendChild(row));
+  
+  // Update sort icons
+  updateSortIcons(columnIndex);
+}
+
+function updateSortIcons(activeColumn) {
+  const headers = document.querySelectorAll('#playersTable th');
+  headers.forEach((header, index) => {
+    const icon = header.querySelector('i');
+    if (index === activeColumn) {
+      icon.className = sortDirection[activeColumn] === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+    } else {
+      icon.className = 'fas fa-sort';
+    }
+  });
+}
+</script>
 {% endblock %}
