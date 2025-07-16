@@ -42,6 +42,7 @@ A comprehensive web application for analyzing and visualizing soccer performance
 ```
 soccer-performance-dashboard/
 ├── app.py                 # Main Flask application
+├── player_traits.py       # Advanced player trait calculations
 ├── templates/            # HTML templates
 │   ├── layout.html       # Base template
 │   ├── index.html        # Home dashboard
@@ -56,7 +57,9 @@ soccer-performance-dashboard/
 ├── scripts/            # Data processing scripts
 │   ├── load_statsbomb.py
 │   └── save_to_sqlite.py
-└── requirements.txt    # Python dependencies
+├── temp_scripts/       # Temporary development scripts
+├── requirements.txt    # Python dependencies
+└── README.md          # This file
 ```
 
 ## 🚀 Quick Start
