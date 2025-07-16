@@ -7,33 +7,49 @@
   </a>
 </div>
 
-<h2>Player Event Summary</h2>
-<table class="table table-striped" id="playersTable">
-  <thead>
-    <tr>
-      <th onclick="sortTable(0, 'string')" style="cursor: pointer;">Player <i class="fas fa-sort"></i></th>
-      <th onclick="sortTable(1, 'number')" style="cursor: pointer;">Passes <i class="fas fa-sort"></i></th>
-      <th onclick="sortTable(2, 'number')" style="cursor: pointer;">Shots <i class="fas fa-sort"></i></th>
-      <th onclick="sortTable(3, 'number')" style="cursor: pointer;">Dribbles <i class="fas fa-sort"></i></th>
-      <th onclick="sortTable(4, 'number')" style="cursor: pointer;">Tackles <i class="fas fa-sort"></i></th>
-      <th onclick="sortTable(5, 'number')" style="cursor: pointer;">Interceptions <i class="fas fa-sort"></i></th>
-      <th onclick="sortTable(6, 'number')" style="cursor: pointer;">Ball Recoveries <i class="fas fa-sort"></i></th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for player in players %}
-    <tr>
-      <td>{{ player.player_name }}</td>
-      <td>{{ player.passes }}</td>
-      <td>{{ player.shots }}</td>
-      <td>{{ player.dribbles }}</td>
-      <td>{{ player.tackles }}</td>
-      <td>{{ player.interceptions }}</td>
-      <td>{{ player.ball_recoveries }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="row mb-3">
+  <div class="col-md-12">
+    <h2>Player Performance</h2>
+    <p class="text-muted">Goals, assists, and expected performance metrics from World Cup 2022</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">Player Statistics</h5>
+  </div>
+  <div class="card-body">
+    <table class="table table-striped" id="playersTable">
+      <thead>
+        <tr>
+          <th onclick="sortTable(0, 'string')" style="cursor: pointer;">Player <i class="fas fa-sort"></i></th>
+          <th onclick="sortTable(1, 'string')" style="cursor: pointer;">Team <i class="fas fa-sort"></i></th>
+          <th onclick="sortTable(2, 'number')" style="cursor: pointer;">Goals <i class="fas fa-sort"></i></th>
+          <th onclick="sortTable(3, 'number')" style="cursor: pointer;">Assists <i class="fas fa-sort"></i></th>
+          <th onclick="sortTable(4, 'number')" style="cursor: pointer;">xG <i class="fas fa-sort"></i></th>
+          <th onclick="sortTable(5, 'number')" style="cursor: pointer;">xA <i class="fas fa-sort"></i></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for player in players %}
+        <tr>
+          <td>
+            <a href="{{ url_for('player_profile', player_name=player.player_name) }}" 
+               class="text-decoration-none">
+              <i class="fas fa-user"></i> {{ player.player_name }}
+            </a>
+          </td>
+          <td>{{ player.team_name }}</td>
+          <td>{{ player.goals }}</td>
+          <td>{{ player.assists }}</td>
+          <td>{{ player.xg }}</td>
+          <td>{{ player.xa }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <script>
 let sortDirection = {};
@@ -47,12 +63,21 @@ function sortTable(columnIndex, dataType) {
   sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
   
   rows.sort((a, b) => {
-    const aValue = a.cells[columnIndex].textContent.trim();
-    const bValue = b.cells[columnIndex].textContent.trim();
+    let aValue, bValue;
+    
+    if (columnIndex <= 1) {
+      // Player name and team
+      aValue = a.cells[columnIndex].textContent.trim();
+      bValue = b.cells[columnIndex].textContent.trim();
+    } else {
+      // Numeric columns
+      aValue = parseFloat(a.cells[columnIndex].textContent);
+      bValue = parseFloat(b.cells[columnIndex].textContent);
+    }
     
     let comparison = 0;
     if (dataType === 'number') {
-      comparison = parseInt(aValue) - parseInt(bValue);
+      comparison = aValue - bValue;
     } else {
       comparison = aValue.localeCompare(bValue);
     }

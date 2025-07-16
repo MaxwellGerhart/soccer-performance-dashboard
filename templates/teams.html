@@ -7,29 +7,38 @@
   </a>
 </div>
 
-<h2>Team Statistics</h2>
-<table class="table table-striped" id="teamsTable">
-  <thead>
-    <tr>
-      <th onclick="sortTable(0, 'string')" style="cursor: pointer;">Team <i class="fas fa-sort"></i></th>
-      <th onclick="sortTable(1, 'number')" style="cursor: pointer;">Total Shots <i class="fas fa-sort"></i></th>
-      <th onclick="sortTable(2, 'number')" style="cursor: pointer;">Total Passes <i class="fas fa-sort"></i></th>
-      <th onclick="sortTable(3, 'number')" style="cursor: pointer;">Total Tackles <i class="fas fa-sort"></i></th>
-      <th onclick="sortTable(4, 'number')" style="cursor: pointer;">Total Interceptions <i class="fas fa-sort"></i></th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for team in teams %}
-    <tr>
-      <td>{{ team.team_name }}</td>
-      <td>{{ team.total_shots }}</td>
-      <td>{{ team.total_passes }}</td>
-      <td>{{ team.total_tackles }}</td>
-      <td>{{ team.total_interceptions }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="row mb-3">
+  <div class="col-md-12">
+    <h2>Team Performance</h2>
+    <p class="text-muted">Goals and expected goals metrics from World Cup 2022</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">Team Statistics</h5>
+  </div>
+  <div class="card-body">
+    <table class="table table-striped" id="teamsTable">
+      <thead>
+        <tr>
+          <th onclick="sortTable(0, 'string')" style="cursor: pointer;">Team <i class="fas fa-sort"></i></th>
+          <th onclick="sortTable(1, 'number')" style="cursor: pointer;">Goals For <i class="fas fa-sort"></i></th>
+          <th onclick="sortTable(2, 'number')" style="cursor: pointer;">xG For <i class="fas fa-sort"></i></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for team in teams %}
+        <tr>
+          <td>{{ team.team_name }}</td>
+          <td>{{ team.goals_for }}</td>
+          <td>{{ team.xg_for }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <script>
 let sortDirection = {};
@@ -43,12 +52,21 @@ function sortTable(columnIndex, dataType) {
   sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
   
   rows.sort((a, b) => {
-    const aValue = a.cells[columnIndex].textContent.trim();
-    const bValue = b.cells[columnIndex].textContent.trim();
+    let aValue, bValue;
+    
+    if (columnIndex === 0) {
+      // Team name
+      aValue = a.cells[columnIndex].textContent.trim();
+      bValue = b.cells[columnIndex].textContent.trim();
+    } else {
+      // Numeric columns
+      aValue = parseFloat(a.cells[columnIndex].textContent);
+      bValue = parseFloat(b.cells[columnIndex].textContent);
+    }
     
     let comparison = 0;
     if (dataType === 'number') {
-      comparison = parseInt(aValue) - parseInt(bValue);
+      comparison = aValue - bValue;
     } else {
       comparison = aValue.localeCompare(bValue);
     }
