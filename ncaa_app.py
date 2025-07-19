@@ -140,9 +140,19 @@ def show_players():
         where_conditions.append("team = :team")
         params['team'] = team_filter
     
+    # Map position abbreviations to full names
+    position_mapping = {
+        'F': 'Forward',
+        'M': 'Midfielder', 
+        'D': 'Defender',
+        'G': 'Goalkeeper'
+    }
+    
     if position_filter:
+        # Convert abbreviation to full name if needed
+        mapped_position = position_mapping.get(position_filter, position_filter)
         where_conditions.append("position = :position")
-        params['position'] = position_filter
+        params['position'] = mapped_position
     
     where_clause = " AND ".join(where_conditions)
     

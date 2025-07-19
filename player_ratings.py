@@ -24,6 +24,10 @@ def load_data():
     player_df = player_df[player_df['Position'] != 'Goalkeeper']
     player_df = player_df[player_df['Minutes Played'] >= 300]
 
+    # Strip whitespace from team names to fix merge issues
+    player_df['Team'] = player_df['Team'].str.strip()
+    team_df['Team'] = team_df['Team'].str.strip()
+
     player_df['Shot Accuracy'] = player_df.apply(
         lambda row: row['Shots On Target'] / row['Shots'] if row['Shots'] > 0 else 0,
         axis=1
@@ -90,6 +94,13 @@ def get_position_weights():
             'Shots': normalized_values[12],
             'Team_Def': normalized_values[13],
             'Fouls_Won': normalized_values[14]
+        },
+        'Unknown': {
+            'Goals': 0.15,  # Balanced weighting
+            'Assists': 0.15,
+            'Shots': 0.15,
+            'Team_Att_Def': 0.45,  # Emphasis on team performance
+            'Fouls_Won': 0.10
         }
     }
 
@@ -120,7 +131,14 @@ def calculate_rating(row, weights):
             row['Norm_DEF'] * row['Team_Minutes_Played_Percentage'] * weights['Defender']['Team_Def']
         ) * 100
     else:
-        return 0
+        # Handle unknown/unrecognized positions with balanced weighting
+        return (
+            row['Norm_Goals'] * weights['Unknown']['Goals'] +
+            row['Norm_Assists'] * weights['Unknown']['Assists'] +
+            row['Norm_Shots'] * weights['Unknown']['Shots'] +
+            row['Norm_Fouls_Won'] * weights['Unknown']['Fouls_Won'] +
+            ((row['Norm_ATT'] + row['Norm_DEF']) / 2) * row['Team_Minutes_Played_Percentage'] * weights['Unknown']['Team_Att_Def']
+        ) * 100
 
 def calculate_max_ratings(df):
     """Calculate MAX ratings for all players using optimized weights"""
@@ -129,15 +147,40 @@ def calculate_max_ratings(df):
     # Apply the rating calculation
     df['Overall_Rating'] = df.apply(lambda row: calculate_rating(row, weights), axis=1)
     
-    # Apply logarithmic scaling to compress rating range
-    df['Log_Rating'] = np.log1p(df['Overall_Rating'])
+    # Separate known and unknown position players for different scaling
+    known_positions = df[df['Position'].isin(['Forward', 'Midfielder', 'Defender'])]
+    unknown_positions = df[df['Position'] == 'Unknown']
     
-    # Normalize ratings to a 0-100 range
-    log_rating_min = df['Log_Rating'].min()
-    log_rating_max = df['Log_Rating'].max()
-    df['MAX'] = (
-        (df['Log_Rating'] - log_rating_min) / (log_rating_max - log_rating_min) * 100
-    ).astype(int)
+    if not known_positions.empty:
+        # Apply logarithmic scaling to known positions only
+        known_positions = known_positions.copy()
+        known_positions['Log_Rating'] = np.log1p(known_positions['Overall_Rating'])
+        
+        # Normalize known positions to 25-95 range
+        log_rating_min = known_positions['Log_Rating'].min()
+        log_rating_max = known_positions['Log_Rating'].max()
+        known_positions['MAX'] = (
+            (known_positions['Log_Rating'] - log_rating_min) / (log_rating_max - log_rating_min) * 70 + 25
+        ).astype(int)
+        
+        # Update the main dataframe with known position ratings
+        df.loc[df['Position'].isin(['Forward', 'Midfielder', 'Defender']), 'MAX'] = known_positions['MAX'].values
+    
+    if not unknown_positions.empty:
+        # For unknown positions, use a simplified scaling based on their own distribution (25-95 range)
+        unknown_positions = unknown_positions.copy()
+        unknown_min = unknown_positions['Overall_Rating'].min()
+        unknown_max = unknown_positions['Overall_Rating'].max()
+        
+        if unknown_max > unknown_min:
+            unknown_positions['MAX'] = (
+                (unknown_positions['Overall_Rating'] - unknown_min) / (unknown_max - unknown_min) * 70 + 25
+            ).astype(int)
+        else:
+            unknown_positions['MAX'] = 60  # Default middle rating in 25-95 range if all unknown players have same score
+            
+        # Update the main dataframe with unknown position ratings
+        df.loc[df['Position'] == 'Unknown', 'MAX'] = unknown_positions['MAX'].values
     
     return df
 
@@ -145,7 +188,7 @@ def calculate_percentiles_by_position(df):
     """Calculate percentile rankings for radar charts"""
     metrics = ['Goals_per90', 'Assists_per90', 'Shots_per90', 'Shots On Target_per90', 'Fouls Won_per90']
     
-    for position in ['Forward', 'Midfielder', 'Defender']:
+    for position in ['Forward', 'Midfielder', 'Defender', 'Unknown']:
         position_df = df[df['Position'] == position]
         for metric in metrics:
             percentile_col = f'{metric}_percentile_{position}'
@@ -218,9 +261,13 @@ def create_radar_chart(player_name, player_data, output_dir='static/radars', for
         elif position == 'Midfielder':
             primary_color = possession_color
             position_desc = "Midfielder"
-        else:
+        elif position == 'Defender':
             primary_color = defending_color
             position_desc = "Defender"
+        else:
+            # Handle Unknown position
+            primary_color = '#7f8c8d'  # Gray color for unknown positions
+            position_desc = "Unknown Position"
         
         # Plot the main radar area
         ax.fill(angles_plot, values_plot, color=primary_color, alpha=0.25)
@@ -286,9 +333,12 @@ def create_radar_chart(player_name, player_data, output_dir='static/radars', for
         elif position == 'Midfielder':
             legend_text = "● Possession"  
             legend_color = possession_color
-        else:
+        elif position == 'Defender':
             legend_text = "● Defending"
             legend_color = defending_color
+        else:
+            legend_text = "● Unknown Position"
+            legend_color = '#7f8c8d'
             
         plt.figtext(0.5, legend_y, legend_text, fontsize=11, ha='center', color=legend_color, fontweight='600')
         
