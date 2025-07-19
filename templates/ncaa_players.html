@@ -149,12 +149,17 @@
                 <i class="fas fa-sort"></i>
               {% endif %}
             </th>
-            <th>
-              Shot Acc. %
+            <th onclick="sortBy('games_played')" style="cursor: pointer;" class="{% if current_filters.sort == 'games_played' %}table-warning{% endif %}">
+              GP 
+              {% if current_filters.sort == 'games_played' %}
+                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
+              {% else %}
+                <i class="fas fa-sort"></i>
+              {% endif %}
             </th>
-            <th onclick="sortBy('goals_per_90')" style="cursor: pointer;" class="{% if current_filters.sort == 'goals_per_90' %}table-warning{% endif %}">
-              Goals/90 
-              {% if current_filters.sort == 'goals_per_90' %}
+            <th onclick="sortBy('minutes_played')" style="cursor: pointer;" class="{% if current_filters.sort == 'minutes_played' %}table-warning{% endif %}">
+              MP 
+              {% if current_filters.sort == 'minutes_played' %}
                 <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
               {% else %}
                 <i class="fas fa-sort"></i>
@@ -216,20 +221,8 @@
               {% endif %}
             </td>
             <td>{{ player.shots or 0 }}</td>
-            <td>
-              {% if player.shot_accuracy > 0 %}
-              {{ player.shot_accuracy }}%
-              {% else %}
-              -
-              {% endif %}
-            </td>
-            <td>
-              {% if player.goals_per_90 > 0 %}
-              {{ player.goals_per_90 }}
-              {% else %}
-              -
-              {% endif %}
-            </td>
+            <td>{{ player.games_played or 0 }}</td>
+            <td>{{ player.minutes_played or 0 }}</td>
             <td>
               {% if player.max_rating != 'N/A' and player.max_rating != 0 %}
                 <span class="badge 
