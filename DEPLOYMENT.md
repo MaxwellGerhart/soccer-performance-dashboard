@@ -12,33 +12,21 @@
 
 ### � Key Fixes Applied:
 
-#### Package Version Compatibility:
-- **Flask**: 2.3.3 (stable version)
-- **pandas**: 2.0.3 (compatible with numpy 1.24.4)
-- **numpy**: 1.24.4 (stable for matplotlib)
-- **matplotlib**: 3.7.2 (tested compatibility)
+## 🔧 Key Fixes Applied:
 
-#### Error Handling:
-- **Graceful Degradation**: App works even if player ratings fail to load
-- **Import Protection**: Handles missing dependencies during deployment
-- **Robust Database**: SQLite operations wrapped with error handling
+#### Package Version Compatibility (Updated for Python 3.13):
+- **Flask**: 3.0.0 (latest stable, Python 3.13 compatible)
+- **pandas**: 2.1.4 (has pre-built wheels for Python 3.13)
+- **numpy**: 1.26.2 (Python 3.13 compatible)
+- **matplotlib**: 3.8.2 (latest with Python 3.13 support)
 
 #### Build Configuration:
-- **Upgraded pip**: Ensures latest package installer
-- **Python 3.11**: Specified in runtime.txt and render.yaml
+- **Enhanced Build**: `pip install --upgrade pip setuptools wheel` (handles build tools)
+- **Python Version**: 3.11.9 preferred, but 3.13 compatible packages
 - **Free Tier**: Configured for Render's free plan
 
-### 📋 Deployment Steps:
-
-#### 1. Commit All Changes:
-```bash
-git add .
-git commit -m "Fix deployment dependencies and add error handling"
-git push origin main
-```
-
 #### 2. Render Deployment Settings:
-- **Build Command**: `pip install --upgrade pip && pip install -r requirements.txt`
+- **Build Command**: `pip install --upgrade pip setuptools wheel && pip install -r requirements.txt`
 - **Start Command**: `python start.py`
 - **Environment**: Python 3
 - **Instance Type**: Free
