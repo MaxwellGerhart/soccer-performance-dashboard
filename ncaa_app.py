@@ -25,6 +25,29 @@ app = Flask(__name__)
 # Create necessary directories
 os.makedirs('static/radars', exist_ok=True)
 
+def get_team_logo_url(team_name):
+    """Generate logo URL for a team name, handling various name formats"""
+    if not team_name:
+        return None
+    
+    # Create potential filename variations
+    potential_names = [
+        team_name,  # Exact match
+        team_name.replace(' ', ' '),  # Handle any spacing issues
+        team_name.replace('State', 'St.'),  # Common abbreviation
+        team_name.replace('Saint', 'St.'),  # Saint -> St.
+        team_name.replace('University', 'U.'),  # University -> U.
+    ]
+    
+    # Check if logo file exists (we'll use a simple approach)
+    logo_filename = f"{team_name}.png"
+    return f"logos/{logo_filename}"
+
+# Add the helper function to Jinja2 context
+@app.context_processor
+def utility_processor():
+    return dict(get_team_logo_url=get_team_logo_url)
+
 # SQLite DB setup for NCAA data
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'data', 'ncaa_soccer.db')}"

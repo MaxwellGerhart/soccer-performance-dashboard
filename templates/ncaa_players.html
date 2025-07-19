@@ -179,7 +179,15 @@
                 <i class="fas fa-user"></i> {{ player.name }}
               </a>
             </td>
-            <td>{{ player.team }}</td>
+            <td>
+              <div class="d-flex align-items-center">
+                <img src="{{ url_for('static', filename=get_team_logo_url(player.team)) }}" 
+                     alt="{{ player.team }}" 
+                     style="width: 20px; height: 20px; margin-right: 6px; object-fit: contain;"
+                     onerror="this.style.display='none'">
+                {{ player.team }}
+              </div>
+            </td>
             <td>
               {% if player.position %}
               <span class="badge badge-position 

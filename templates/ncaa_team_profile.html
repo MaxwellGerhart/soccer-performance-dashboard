@@ -19,17 +19,23 @@
   <div class="col-md-6">
     <div class="card">
       <div class="card-header">
-        <h2 class="mb-0">
-          <i class="fas fa-shield-alt"></i> {{ team_stats.team }}
-          {% if team_stats.max_rating != 'N/A' %}
-          <span class="badge bg-dark ms-1">MAX: {{ team_stats.max_rating|round(0)|int }}</span>
-          {% endif %}
-          {% if team_stats.att_rating != 'N/A' %}
-          <span class="badge bg-info ms-1">ATT: {{ "%.2f"|format(team_stats.att_rating) }}</span>
-          {% endif %}
-          {% if team_stats.def_rating != 'N/A' %}
-          <span class="badge bg-warning ms-1">DEF: {{ "%.2f"|format(team_stats.def_rating) }}</span>
-          {% endif %}
+        <h2 class="mb-0 d-flex align-items-center">
+          <img src="{{ url_for('static', filename=get_team_logo_url(team_stats.team)) }}" 
+               alt="{{ team_stats.team }}" 
+               style="width: 40px; height: 40px; margin-right: 15px; object-fit: contain;"
+               onerror="this.style.display='none'">
+          <div>
+            <i class="fas fa-shield-alt"></i> {{ team_stats.team }}
+            {% if team_stats.max_rating != 'N/A' %}
+            <span class="badge bg-dark ms-1">MAX: {{ team_stats.max_rating|round(0)|int }}</span>
+            {% endif %}
+            {% if team_stats.att_rating != 'N/A' %}
+            <span class="badge bg-info ms-1">ATT: {{ "%.2f"|format(team_stats.att_rating) }}</span>
+            {% endif %}
+            {% if team_stats.def_rating != 'N/A' %}
+            <span class="badge bg-warning ms-1">DEF: {{ "%.2f"|format(team_stats.def_rating) }}</span>
+            {% endif %}
+          </div>
         </h2>
       </div>
       <div class="card-body">

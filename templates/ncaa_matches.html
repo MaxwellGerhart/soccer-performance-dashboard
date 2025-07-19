@@ -34,11 +34,27 @@
         <tbody>
           {% for match in matches %}
           <tr>
-            <td><strong>{{ match.home_team }}</strong></td>
+            <td>
+              <div class="d-flex align-items-center">
+                <img src="{{ url_for('static', filename=get_team_logo_url(match.home_team)) }}" 
+                     alt="{{ match.home_team }}" 
+                     style="width: 25px; height: 25px; margin-right: 8px; object-fit: contain;"
+                     onerror="this.style.display='none'">
+                <strong>{{ match.home_team }}</strong>
+              </div>
+            </td>
             <td class="text-center">
               <span class="badge bg-primary">{{ match.home_team_score }} - {{ match.away_team_score }}</span>
             </td>
-            <td><strong>{{ match.away_team }}</strong></td>
+            <td>
+              <div class="d-flex align-items-center">
+                <img src="{{ url_for('static', filename=get_team_logo_url(match.away_team)) }}" 
+                     alt="{{ match.away_team }}" 
+                     style="width: 25px; height: 25px; margin-right: 8px; object-fit: contain;"
+                     onerror="this.style.display='none'">
+                <strong>{{ match.away_team }}</strong>
+              </div>
+            </td>
             <td>
               {% if match.total_goals >= 5 %}
               <span class="badge bg-danger">{{ match.total_goals }}</span>
