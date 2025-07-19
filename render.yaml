@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: ncaa-soccer-dashboard
+    name: america-scouted-dashboard
     env: python
     runtime: python
     buildCommand: "pip install --upgrade pip setuptools wheel && pip install -r requirements.txt"
@@ -8,4 +8,4 @@ services:
     plan: free
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.9
+        value: 3.11.11
