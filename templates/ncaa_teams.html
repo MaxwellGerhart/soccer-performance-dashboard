@@ -1,0 +1,117 @@
+{% extends "ncaa_layout.html" %}
+
+{% block content %}
+<div class="mb-3">
+  <h2>Team Standings</h2>
+  <p class="text-muted">NCAA Division I Men's Soccer 2024 season team standings with MAX ratings</p>
+</div>
+
+<!-- Team Standings -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">League Table</h5>
+    <small class="text-muted">Ordered by Points, Goal Difference, Goals For</small>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>Pos</th>
+            <th>Team</th>
+            <th>GP</th>
+            <th>W</th>
+            <th>D</th>
+            <th>L</th>
+            <th>GF</th>
+            <th>GA</th>
+            <th>GD</th>
+            <th>Pts</th>
+            <th>ATT</th>
+            <th>DEF</th>
+            <th>MAX</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for team in team_standings %}
+          <tr>
+            <td><strong>{{ loop.index }}</strong></td>
+            <td>
+              <a href="{{ url_for('team_profile', team_name=team.team) }}" class="text-decoration-none">
+                <strong>{{ team.team }}</strong>
+              </a>
+            </td>
+            <td>{{ team.games_played }}</td>
+            <td><span class="badge bg-success">{{ team.wins }}</span></td>
+            <td><span class="badge bg-warning">{{ team.draws }}</span></td>
+            <td><span class="badge bg-danger">{{ team.losses }}</span></td>
+            <td>{{ team.goals_for }}</td>
+            <td>{{ team.goals_against }}</td>
+            <td class="{% if team.goal_difference > 0 %}text-success{% elif team.goal_difference < 0 %}text-danger{% endif %}">
+              {% if team.goal_difference > 0 %}+{% endif %}{{ team.goal_difference }}
+            </td>
+            <td><strong class="text-primary">{{ team.points }}</strong></td>
+            <td>
+              {% if team.att_rating != 'N/A' %}
+                <span class="badge bg-info">{{ "%.2f"|format(team.att_rating) }}</span>
+              {% else %}
+                <span class="badge bg-secondary">N/A</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if team.def_rating != 'N/A' %}
+                <span class="badge bg-warning">{{ "%.2f"|format(team.def_rating) }}</span>
+              {% else %}
+                <span class="badge bg-secondary">N/A</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if team.max_rating != 'N/A' %}
+                <span class="badge 
+                  {% if team.max_rating >= 70 %}bg-success
+                  {% elif team.max_rating >= 50 %}bg-warning
+                  {% else %}bg-secondary{% endif %}">
+                  {{ team.max_rating|round(0)|int }}
+                </span>
+              {% else %}
+                <span class="badge bg-secondary">N/A</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="row mt-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h6>Legend:</h6>
+        <div class="row">
+          <div class="col-md-6">
+            <small>
+              <strong>GP</strong> = Games Played<br>
+              <strong>W</strong> = Wins<br>
+              <strong>D</strong> = Draws<br>
+              <strong>L</strong> = Losses
+            </small>
+          </div>
+          <div class="col-md-6">
+            <small>
+              <strong>GF</strong> = Goals For<br>
+              <strong>GA</strong> = Goals Against<br>
+              <strong>GD</strong> = Goal Difference<br>
+              <strong>Pts</strong> = Points (3 for win, 1 for draw)<br>
+              <strong>MAX</strong> = Team strength rating based on match performance
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

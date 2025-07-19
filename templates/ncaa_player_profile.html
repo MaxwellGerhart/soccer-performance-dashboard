@@ -1,0 +1,169 @@
+{% extends "ncaa_layout.html" %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('show_players') }}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Back to Players
+  </a>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="mb-0">
+          <i class="fas fa-user"></i> {{ player.name }}
+          <span class="badge bg-primary ms-2">{{ player.team }}</span>
+          {% if player.position %}
+          <span class="badge 
+            {% if player.position == 'Forward' %}bg-success
+            {% elif player.position == 'Midfielder' %}bg-primary  
+            {% elif player.position == 'Defender' %}bg-warning
+            {% elif player.position == 'Goalkeeper' %}bg-danger
+            {% else %}bg-secondary{% endif %} ms-1">
+            {{ player.position }}
+          </span>
+          {% endif %}
+          {% if player.max_rating != 'N/A' %}
+          <span class="badge bg-dark ms-1">MAX: {{ player.max_rating|round(0)|int }}</span>
+          {% endif %}
+        </h2>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h5>Performance Stats</h5>
+            <table class="table table-sm">
+              <tr>
+                <td><i class="fas fa-futbol text-success"></i> Goals</td>
+                <td><strong>{{ player.goals }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-hands-helping text-info"></i> Assists</td>
+                <td><strong>{{ player.assists }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-crosshairs text-warning"></i> Shots</td>
+                <td><strong>{{ player.shots or 0 }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-target text-primary"></i> Shots on Target</td>
+                <td><strong>{{ player.shots_on_target or 0 }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-percentage text-success"></i> Shot Accuracy</td>
+                <td><strong>{{ player.shot_accuracy or 0 }}%</strong></td>
+              </tr>
+            </table>
+          </div>
+          <div class="col-md-6">
+            <h5>Additional Stats</h5>
+            <table class="table table-sm">
+              <tr>
+                <td><i class="fas fa-clock text-info"></i> Minutes Played</td>
+                <td><strong>{{ player.minutes_played or 0 }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-chart-line text-warning"></i> Goals per 90min</td>
+                <td><strong>{{ player.goals_per_90 or 0 }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-chart-bar text-primary"></i> Assists per 90min</td>
+                <td><strong>{{ player.assists_per_90 or 0 }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-shield-alt text-secondary"></i> Fouls Won</td>
+                <td><strong>{{ player.fouls_won or 0 }}</strong></td>
+              </tr>
+              {% if player.max_rating != 'N/A' %}
+              <tr>
+                <td><i class="fas fa-star text-warning"></i> MAX Rating</td>
+                <td><strong>{{ player.max_rating|round(0)|int }}</strong></td>
+              </tr>
+              {% endif %}
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if player.radar_chart %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-chart-area"></i> Performance Radar</h5>
+        <small class="text-muted">Percentile scores vs players of same position</small>
+      </div>
+      <div class="card-body text-center">
+        <img src="{{ url_for('static', filename='radars/' + player.radar_chart) }}" 
+             alt="Player Radar Chart" 
+             class="img-fluid"
+             style="max-height: 500px; max-width: 100%;"
+             onerror="this.parentElement.innerHTML='<div class=\'alert alert-warning\'>Radar chart temporarily unavailable</div>'">
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-chart-area"></i> Performance Radar</h5>
+        <small class="text-muted">Generating radar chart...</small>
+      </div>
+      <div class="card-body text-center">
+        <div class="alert alert-info">
+          <i class="fas fa-spinner fa-spin"></i> 
+          <strong>Generating radar chart...</strong><br>
+          <small>Refresh the page in a few moments to see the chart</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if not player.radar_chart %}
+<!-- Team matches shown in second column if no radar chart -->
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-shield-alt"></i> Team Matches</h5>
+      </div>
+      <div class="card-body">
+        <div class="list-group list-group-flush">
+          {% for match in team_matches[:8] %}
+          <div class="list-group-item">
+            <small class="text-muted">{{ match.match_description }}</small>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+.stat-card {
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+</style>
+{% endblock %}

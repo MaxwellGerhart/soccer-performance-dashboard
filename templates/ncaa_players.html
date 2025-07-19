@@ -1,0 +1,401 @@
+{% extends "ncaa_layout.html" %}
+
+{% block content %}
+<div class="mb-3">
+  <h2>Player Statistics</h2>
+  <p class="text-muted">NCAA Division I Men's Soccer 2024 season player performance data ({{ pagination.total }} players with 250+ minutes)</p>
+  <div class="alert alert-info alert-sm">
+    <i class="fas fa-info-circle"></i>
+    <small><strong>Note:</strong> Only showing players with at least 250 minutes played to focus on regular contributors.</small>
+  </div>
+</div>
+
+<!-- Search and Filter Controls -->
+<form method="GET" id="filterForm">
+  <input type="hidden" name="page" value="1" id="pageInput">
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <div class="input-group">
+        <span class="input-group-text"><i class="fas fa-search"></i></span>
+        <input type="text" name="search" id="searchInput" class="form-control" 
+               placeholder="Search players by name..." 
+               value="{{ current_filters.search }}">
+        <button class="btn btn-outline-primary" type="submit">
+          <i class="fas fa-search"></i> Search
+        </button>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <select name="team" id="teamFilter" class="form-select" onchange="submitForm()">
+        <option value="">All Teams</option>
+        {% for team in teams %}
+        <option value="{{ team }}" {% if current_filters.team == team %}selected{% endif %}>
+          {{ team }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="position" id="positionFilter" class="form-select" onchange="submitForm()">
+        <option value="">All Positions</option>
+        <option value="F" {% if current_filters.position == 'F' %}selected{% endif %}>Forward</option>
+        <option value="M" {% if current_filters.position == 'M' %}selected{% endif %}>Midfielder</option>
+        <option value="D" {% if current_filters.position == 'D' %}selected{% endif %}>Defender</option>
+        <option value="G" {% if current_filters.position == 'G' %}selected{% endif %}>Goalkeeper</option>
+      </select>
+    </div>
+  </div>
+  
+  <!-- Hidden sort inputs -->
+  <input type="hidden" name="sort" id="sortInput" value="{{ current_filters.sort }}">
+  <input type="hidden" name="order" id="orderInput" value="{{ current_filters.order }}">
+</form>
+
+<!-- Active Filters Display -->
+{% if current_filters.search or current_filters.team or current_filters.position %}
+<div class="mb-3">
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <span class="text-muted">Active filters:</span>
+    {% if current_filters.search %}
+      <span class="badge bg-info">
+        Search: "{{ current_filters.search }}"
+        <a href="{{ url_for('show_players', team=current_filters.team, position=current_filters.position, sort=current_filters.sort, order=current_filters.order) }}" 
+           class="text-white ms-1" style="text-decoration: none;">×</a>
+      </span>
+    {% endif %}
+    {% if current_filters.team %}
+      <span class="badge bg-primary">
+        Team: {{ current_filters.team }}
+        <a href="{{ url_for('show_players', search=current_filters.search, position=current_filters.position, sort=current_filters.sort, order=current_filters.order) }}" 
+           class="text-white ms-1" style="text-decoration: none;">×</a>
+      </span>
+    {% endif %}
+    {% if current_filters.position %}
+      <span class="badge bg-success">
+        Position: {{ current_filters.position }}
+        <a href="{{ url_for('show_players', search=current_filters.search, team=current_filters.team, sort=current_filters.sort, order=current_filters.order) }}" 
+           class="text-white ms-1" style="text-decoration: none;">×</a>
+      </span>
+    {% endif %}
+    <a href="{{ url_for('show_players') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-times"></i> Clear All
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="mb-0">Player Performance - Page {{ pagination.page }} of {{ pagination.pages }}</h5>
+    </div>
+    <div>
+      <small class="text-muted">
+        Showing {{ pagination.start_item }}-{{ pagination.end_item }} of {{ pagination.total }} 
+        {% if current_filters.search or current_filters.team or current_filters.position %}filtered{% endif %} players
+      </small>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover" id="playersTable">
+        <thead class="table-dark">
+          <tr>
+            <th onclick="sortBy('name')" style="cursor: pointer;" class="{% if current_filters.sort == 'name' %}table-warning{% endif %}">
+              Player 
+              {% if current_filters.sort == 'name' %}
+                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
+              {% else %}
+                <i class="fas fa-sort"></i>
+              {% endif %}
+            </th>
+            <th onclick="sortBy('team')" style="cursor: pointer;" class="{% if current_filters.sort == 'team' %}table-warning{% endif %}">
+              Team 
+              {% if current_filters.sort == 'team' %}
+                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
+              {% else %}
+                <i class="fas fa-sort"></i>
+              {% endif %}
+            </th>
+            <th onclick="sortBy('position')" style="cursor: pointer;" class="{% if current_filters.sort == 'position' %}table-warning{% endif %}">
+              Position 
+              {% if current_filters.sort == 'position' %}
+                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
+              {% else %}
+                <i class="fas fa-sort"></i>
+              {% endif %}
+            </th>
+            <th onclick="sortBy('goals')" style="cursor: pointer;" class="{% if current_filters.sort == 'goals' %}table-warning{% endif %}">
+              Goals 
+              {% if current_filters.sort == 'goals' %}
+                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
+              {% else %}
+                <i class="fas fa-sort"></i>
+              {% endif %}
+            </th>
+            <th onclick="sortBy('assists')" style="cursor: pointer;" class="{% if current_filters.sort == 'assists' %}table-warning{% endif %}">
+              Assists 
+              {% if current_filters.sort == 'assists' %}
+                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
+              {% else %}
+                <i class="fas fa-sort"></i>
+              {% endif %}
+            </th>
+            <th onclick="sortBy('shots')" style="cursor: pointer;" class="{% if current_filters.sort == 'shots' %}table-warning{% endif %}">
+              Shots 
+              {% if current_filters.sort == 'shots' %}
+                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
+              {% else %}
+                <i class="fas fa-sort"></i>
+              {% endif %}
+            </th>
+            <th>
+              Shot Acc. %
+            </th>
+            <th onclick="sortBy('goals_per_90')" style="cursor: pointer;" class="{% if current_filters.sort == 'goals_per_90' %}table-warning{% endif %}">
+              Goals/90 
+              {% if current_filters.sort == 'goals_per_90' %}
+                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
+              {% else %}
+                <i class="fas fa-sort"></i>
+              {% endif %}
+            </th>
+            <th onclick="sortBy('max')" style="cursor: pointer;" class="{% if current_filters.sort == 'max' %}table-warning{% endif %}">
+              MAX 
+              {% if current_filters.sort == 'max' %}
+                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
+              {% else %}
+                <i class="fas fa-sort"></i>
+              {% endif %}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for player in players %}
+          <tr>
+            <td>
+              <a href="{{ url_for('player_profile', player_name=player.name) }}" 
+                 class="text-decoration-none">
+                <i class="fas fa-user"></i> {{ player.name }}
+              </a>
+            </td>
+            <td>{{ player.team }}</td>
+            <td>
+              {% if player.position %}
+              <span class="badge badge-position 
+                {% if player.position == 'Forward' %}bg-success
+                {% elif player.position == 'Midfielder' %}bg-primary
+                {% elif player.position == 'Defender' %}bg-warning
+                {% elif player.position == 'Goalkeeper' %}bg-danger
+                {% else %}bg-secondary{% endif %}">
+                {{ player.position }}
+              </span>
+              {% endif %}
+            </td>
+            <td>
+              {% if player.goals > 0 %}
+              <span class="badge bg-success">{{ player.goals }}</span>
+              {% else %}
+              {{ player.goals }}
+              {% endif %}
+            </td>
+            <td>
+              {% if player.assists > 0 %}
+              <span class="badge bg-info">{{ player.assists }}</span>
+              {% else %}
+              {{ player.assists }}
+              {% endif %}
+            </td>
+            <td>{{ player.shots or 0 }}</td>
+            <td>
+              {% if player.shot_accuracy > 0 %}
+              {{ player.shot_accuracy }}%
+              {% else %}
+              -
+              {% endif %}
+            </td>
+            <td>
+              {% if player.goals_per_90 > 0 %}
+              {{ player.goals_per_90 }}
+              {% else %}
+              -
+              {% endif %}
+            </td>
+            <td>
+              {% if player.max_rating != 'N/A' and player.max_rating != 0 %}
+                <span class="badge 
+                  {% if player.max_rating >= 80 %}bg-success
+                  {% elif player.max_rating >= 60 %}bg-warning
+                  {% elif player.max_rating >= 40 %}bg-info
+                  {% else %}bg-secondary{% endif %}">
+                  {{ player.max_rating|round(0)|int }}
+                </span>
+              {% else %}
+                <span class="badge bg-light text-dark">N/A</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Pagination Controls -->
+{% if pagination.pages > 1 %}
+<div class="d-flex justify-content-between align-items-center mt-4">
+  <div>
+    <p class="mb-0 text-muted">
+      Showing {{ pagination.start_item }} to {{ pagination.end_item }} of {{ pagination.total }} players
+    </p>
+  </div>
+  <nav aria-label="Player pagination">
+    <ul class="pagination mb-0">
+      <!-- Previous Page -->
+      {% if pagination.has_prev %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('show_players', page=pagination.prev_num, search=current_filters.search, team=current_filters.team, position=current_filters.position, sort=current_filters.sort, order=current_filters.order) }}">
+            <i class="fas fa-chevron-left"></i> Previous
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">
+            <i class="fas fa-chevron-left"></i> Previous
+          </span>
+        </li>
+      {% endif %}
+      
+      <!-- First Page -->
+      {% if pagination.page_numbers[0] > 1 %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('show_players', page=1, search=current_filters.search, team=current_filters.team, position=current_filters.position, sort=current_filters.sort, order=current_filters.order) }}">1</a>
+        </li>
+        {% if pagination.page_numbers[0] > 2 %}
+          <li class="page-item disabled">
+            <span class="page-link">...</span>
+          </li>
+        {% endif %}
+      {% endif %}
+      
+      <!-- Page Numbers -->
+      {% for page_num in pagination.page_numbers %}
+        {% if page_num == pagination.page %}
+          <li class="page-item active">
+            <span class="page-link">{{ page_num }}</span>
+          </li>
+        {% else %}
+          <li class="page-item">
+            <a class="page-link" href="{{ url_for('show_players', page=page_num, search=current_filters.search, team=current_filters.team, position=current_filters.position, sort=current_filters.sort, order=current_filters.order) }}">{{ page_num }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+      
+      <!-- Last Page -->
+      {% if pagination.page_numbers[-1] < pagination.pages %}
+        {% if pagination.page_numbers[-1] < pagination.pages - 1 %}
+          <li class="page-item disabled">
+            <span class="page-link">...</span>
+          </li>
+        {% endif %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('show_players', page=pagination.pages, search=current_filters.search, team=current_filters.team, position=current_filters.position, sort=current_filters.sort, order=current_filters.order) }}">{{ pagination.pages }}</a>
+        </li>
+      {% endif %}
+      
+      <!-- Next Page -->
+      {% if pagination.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('show_players', page=pagination.next_num, search=current_filters.search, team=current_filters.team, position=current_filters.position, sort=current_filters.sort, order=current_filters.order) }}">
+            Next <i class="fas fa-chevron-right"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">
+            Next <i class="fas fa-chevron-right"></i>
+          </span>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+
+<!-- Quick Jump to Page -->
+<div class="row mt-3">
+  <div class="col-md-6">
+    <div class="input-group input-group-sm">
+      <span class="input-group-text">Go to page:</span>
+      <input type="number" id="jumpToPageInput" class="form-control" min="1" max="{{ pagination.pages }}" placeholder="{{ pagination.page }}">
+      <button class="btn btn-outline-primary" type="button" onclick="jumpToPage()">
+        <i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+  </div>
+  <div class="col-md-6 text-end">
+    <small class="text-muted">Total: {{ pagination.pages }} pages</small>
+  </div>
+</div>
+{% endif %}
+
+<script>
+// Form submission functions
+function submitForm() {
+  document.getElementById('pageInput').value = '1'; // Reset to first page when filtering
+  document.getElementById('filterForm').submit();
+}
+
+function sortBy(column) {
+  const currentSort = '{{ current_filters.sort }}';
+  const currentOrder = '{{ current_filters.order }}';
+  
+  let newOrder = 'desc';
+  if (currentSort === column) {
+    newOrder = currentOrder === 'desc' ? 'asc' : 'desc';
+  }
+  
+  document.getElementById('sortInput').value = column;
+  document.getElementById('orderInput').value = newOrder;
+  document.getElementById('pageInput').value = '1'; // Reset to first page when sorting
+  document.getElementById('filterForm').submit();
+}
+
+// Jump to specific page functionality
+function jumpToPage() {
+  const pageInput = document.getElementById('jumpToPageInput');
+  const pageNumber = parseInt(pageInput.value);
+  const maxPages = {% if pagination %}{{ pagination.pages }}{% else %}1{% endif %};
+  
+  if (pageNumber && pageNumber >= 1 && pageNumber <= maxPages) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', pageNumber);
+    window.location.href = url.toString();
+  } else {
+    alert('Please enter a page number between 1 and ' + maxPages);
+  }
+}
+
+// Handle Enter key in search and jump inputs
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('searchInput');
+  const jumpInput = document.getElementById('jumpToPageInput');
+  
+  if (searchInput) {
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        submitForm();
+      }
+    });
+  }
+  
+  if (jumpInput) {
+    jumpInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        jumpToPage();
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

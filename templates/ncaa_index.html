@@ -1,0 +1,147 @@
+{% extends "ncaa_layout.html" %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <h1 class="text-center mb-4">
+      <i class="fas fa-futbol text-primary"></i> 
+      NCAA Division I Men's Soccer Dashboard
+    </h1>
+    <p class="text-center text-muted lead">
+      Comprehensive statistics and analysis for the 2024 NCAA Division I Men's Soccer season
+    </p>
+  </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="row mb-5">
+  <div class="col-md-3 col-sm-6">
+    <div class="stat-card text-center">
+      <h3>{{ total_matches }}</h3>
+      <p class="mb-0"><i class="fas fa-calendar-alt"></i> Total Matches</p>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="stat-card text-center">
+      <h3>{{ total_teams }}</h3>
+      <p class="mb-0"><i class="fas fa-shield-alt"></i> Teams</p>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="stat-card text-center">
+      <h3>{{ total_players }}</h3>
+      <p class="mb-0"><i class="fas fa-users"></i> Players</p>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="stat-card text-center">
+      <h3>{{ total_goals }}</h3>
+      <p class="mb-0"><i class="fas fa-futbol"></i> Total Goals</p>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Top Players -->
+  <div class="col-lg-4 mb-4">
+    <div class="card">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-star"></i> Top Scorers
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="list-group list-group-flush">
+          {% for player in top_players %}
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <a href="{{ url_for('player_profile', player_name=player.name) }}" class="text-decoration-none">
+                <strong>{{ player.name }}</strong>
+              </a>
+              <br>
+              <small class="text-muted">{{ player.team }}</small>
+            </div>
+            <div class="text-end">
+              <span class="badge bg-success rounded-pill">{{ player.goals }} goals</span>
+              {% if player.assists > 0 %}
+              <br><small class="text-muted">{{ player.assists }} assists</small>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Teams -->
+  <div class="col-lg-4 mb-4">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-trophy"></i> Top Scoring Teams
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="list-group list-group-flush">
+          {% for team in top_teams %}
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ team.team }}</strong>
+            </div>
+            <span class="badge bg-primary rounded-pill">{{ team.total_goals }} goals</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- High-Scoring Matches -->
+  <div class="col-lg-4 mb-4">
+    <div class="card">
+      <div class="card-header bg-warning text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-fire"></i> High-Scoring Matches
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="list-group list-group-flush">
+          {% for match in high_scoring_matches %}
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="flex-grow-1">
+                <strong>{{ match.home_team }} {{ match.home_team_score }} - {{ match.away_team_score }} {{ match.away_team }}</strong>
+              </div>
+              <span class="badge bg-warning rounded-pill">{{ match.total_goals }} goals</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body text-center">
+        <h5 class="card-title">Explore the Data</h5>
+        <div class="btn-group" role="group">
+          <a href="{{ url_for('show_players') }}" class="btn btn-primary">
+            <i class="fas fa-users"></i> Browse Players
+          </a>
+          <a href="{{ url_for('show_teams') }}" class="btn btn-success">
+            <i class="fas fa-shield-alt"></i> Team Statistics
+          </a>
+          <a href="{{ url_for('show_matches') }}" class="btn btn-warning">
+            <i class="fas fa-calendar-alt"></i> Match Results
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

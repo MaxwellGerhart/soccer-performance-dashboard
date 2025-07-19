@@ -1,0 +1,210 @@
+{% extends "ncaa_layout.html" %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('show_teams') }}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Back to Teams
+  </a>
+</div>
+
+{% if team_stats.error %}
+<div class="alert alert-danger">
+  <h4>Team Not Found</h4>
+  <p>{{ team_stats.error }}</p>
+</div>
+{% else %}
+
+<div class="row">
+  <!-- Team Information Card -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="mb-0">
+          <i class="fas fa-shield-alt"></i> {{ team_stats.team }}
+          {% if team_stats.max_rating != 'N/A' %}
+          <span class="badge bg-dark ms-1">MAX: {{ team_stats.max_rating|round(0)|int }}</span>
+          {% endif %}
+          {% if team_stats.att_rating != 'N/A' %}
+          <span class="badge bg-info ms-1">ATT: {{ "%.2f"|format(team_stats.att_rating) }}</span>
+          {% endif %}
+          {% if team_stats.def_rating != 'N/A' %}
+          <span class="badge bg-warning ms-1">DEF: {{ "%.2f"|format(team_stats.def_rating) }}</span>
+          {% endif %}
+        </h2>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h5>Season Record</h5>
+            <table class="table table-sm">
+              <tr>
+                <td><i class="fas fa-trophy text-warning"></i> Record</td>
+                <td><strong>{{ team_stats.wins }}-{{ team_stats.losses }}-{{ team_stats.draws }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-gamepad text-info"></i> Games Played</td>
+                <td><strong>{{ team_stats.games_played }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-star text-primary"></i> Points</td>
+                <td><strong>{{ team_stats.points }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-percentage text-success"></i> Win Rate</td>
+                <td><strong>{{ "%.1f"|format((team_stats.wins / team_stats.games_played * 100) if team_stats.games_played > 0 else 0) }}%</strong></td>
+              </tr>
+            </table>
+          </div>
+          <div class="col-md-6">
+            <h5>Scoring Stats</h5>
+            <table class="table table-sm">
+              <tr>
+                <td><i class="fas fa-futbol text-success"></i> Goals For</td>
+                <td><strong>{{ team_stats.goals_for }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-shield text-danger"></i> Goals Against</td>
+                <td><strong>{{ team_stats.goals_against }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-plus-minus text-info"></i> Goal Difference</td>
+                <td><strong>{{ team_stats.goal_difference }}</strong></td>
+              </tr>
+              <tr>
+                <td><i class="fas fa-chart-line text-warning"></i> Goals/Game</td>
+                <td><strong>{{ team_stats.avg_goals_per_game }}</strong></td>
+              </tr>
+              {% if team_stats.att_rating != 'N/A' %}
+              <tr>
+                <td><i class="fas fa-arrow-up text-success"></i> Attack Rating</td>
+                <td><strong><span class="badge bg-info">{{ "%.2f"|format(team_stats.att_rating) }}</span></strong></td>
+              </tr>
+              {% endif %}
+              {% if team_stats.def_rating != 'N/A' %}
+              <tr>
+                <td><i class="fas fa-shield-alt text-primary"></i> Defense Rating</td>
+                <td><strong><span class="badge bg-warning">{{ "%.2f"|format(team_stats.def_rating) }}</span></strong></td>
+              </tr>
+              {% endif %}
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Matches Card -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-calendar"></i> Recent Matches</h5>
+      </div>
+      <div class="card-body">
+        {% if recent_matches %}
+        <div class="list-group list-group-flush">
+          {% for match in recent_matches[:8] %}
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              {% if match.result == 'W' %}
+                <span class="badge bg-success me-2">W</span>
+              {% elif match.result == 'D' %}
+                <span class="badge bg-warning me-2">D</span>
+              {% else %}
+                <span class="badge bg-danger me-2">L</span>
+              {% endif %}
+              <strong>{{ match.opponent }}</strong>
+              <small class="text-muted">({{ match.home_away }})</small>
+            </div>
+            <div>
+              {% if match.home_team == team_stats.team %}
+                <span class="badge bg-light text-dark">{{ match.home_team_score }}-{{ match.away_team_score }}</span>
+              {% else %}
+                <span class="badge bg-light text-dark">{{ match.away_team_score }}-{{ match.home_team_score }}</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i> No match data available
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Team Roster -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="fas fa-users"></i> Team Roster
+        </h5>
+      </div>
+      <div class="card-body">
+        {% if roster %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th><i class="fas fa-user"></i> Player</th>
+                <th><i class="fas fa-running"></i> Position</th>
+                <th><i class="fas fa-clock"></i> Minutes</th>
+                <th><i class="fas fa-futbol"></i> Goals</th>
+                <th><i class="fas fa-hands-helping"></i> Assists</th>
+                <th><i class="fas fa-crosshairs"></i> Shots</th>
+                <th><i class="fas fa-target"></i> On Target</th>
+                <th><i class="fas fa-chart-line"></i> G/90</th>
+                <th><i class="fas fa-chart-bar"></i> A/90</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for player in roster %}
+              <tr {% if player.minutes_played < 250 %}class="text-muted"{% endif %}>
+                <td>
+                  {% if player.minutes_played >= 250 %}
+                    <a href="{{ url_for('player_profile', player_name=player.name) }}" class="text-decoration-none">
+                      <strong>{{ player.name }}</strong>
+                    </a>
+                  {% else %}
+                    {{ player.name }}
+                    <small class="text-muted">(limited minutes)</small>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge 
+                    {% if player.position == 'Forward' %}bg-success
+                    {% elif player.position == 'Midfielder' %}bg-primary  
+                    {% elif player.position == 'Defender' %}bg-warning
+                    {% elif player.position == 'Goalkeeper' %}bg-danger
+                    {% else %}bg-secondary{% endif %}">
+                    {{ player.position }}
+                  </span>
+                </td>
+                <td>{{ player.minutes_played }}</td>
+                <td>{{ player.goals }}</td>
+                <td>{{ player.assists }}</td>
+                <td>{{ player.shots or 0 }}</td>
+                <td>{{ player.shots_on_target or 0 }}</td>
+                <td>{{ player.goals_per_90 or 0 }}</td>
+                <td>{{ player.assists_per_90 or 0 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i> No roster data available
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}

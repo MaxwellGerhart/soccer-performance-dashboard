@@ -1,7 +1,31 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyc
+
+# Virtual environments
 .env
+.venv
+env/
+venv/
+ENV/
+
+# Flask instance folder
 instance/
-*.db
+
+# IDE
 .vscode/
-data/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Note: We want to include data/ directory for deployment
+# but exclude any large/sensitive files within it
+data/*.log
+data/temp/
