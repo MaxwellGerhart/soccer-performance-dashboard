@@ -3,7 +3,7 @@ services:
     name: america-scouted-dashboard
     env: python
     runtime: python
-    buildCommand: "python -m pip install --upgrade pip setuptools wheel && python -m pip install --only-binary=all -r requirements.txt"
+    buildCommand: "python -m pip install --upgrade pip setuptools wheel && python -m pip install --prefer-binary -r requirements.txt"
     startCommand: "python start.py"
     plan: free
     region: oregon
@@ -12,3 +12,5 @@ services:
         value: 3.11.11
       - key: PIP_NO_BUILD_ISOLATION
         value: "false"
+      - key: PIP_PREFER_BINARY
+        value: "1"
