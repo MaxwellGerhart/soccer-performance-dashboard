@@ -61,29 +61,35 @@ def normalize_stats(df):
     return df
 
 def get_position_weights():
-    """Get optimized weights for each position"""
-    # These weights are derived from the optimization in the notebook
+    """Get optimized weights for each position based on MLS draft analysis"""
+    # Optimized weights from minimize() function targeting MLS drafted players
+    normalized_values = [
+        1.22615086e-02, 6.83878282e-03, 4.27845135e-05, 8.95389259e-01, 8.54680422e-02,  # Forward
+        4.99482855e-02, 1.71725289e-02, 6.40188592e-03, 8.22166396e-01, 1.04311327e-01,  # Midfielder
+        1.51994820e-03, 4.78093692e-02, 7.58428390e-02, 7.54410683e-01, 1.20417325e-01   # Defender
+    ]
+    
     return {
         'Forward': {
-            'Goals': 0.35,
-            'Assists': 0.20,
-            'Shots': 0.25,
-            'Team_Att': 0.15,
-            'Fouls_Won': 0.05
+            'Goals': normalized_values[0],
+            'Assists': normalized_values[1],
+            'Shots': normalized_values[2],
+            'Team_Att': normalized_values[3],
+            'Fouls_Won': normalized_values[4]
         },
         'Midfielder': {
-            'Goals': 0.20,
-            'Assists': 0.30,
-            'Shots': 0.15,
-            'Team_Att_Def': 0.25,
-            'Fouls_Won': 0.10
+            'Goals': normalized_values[5],
+            'Assists': normalized_values[6],
+            'Shots': normalized_values[7],
+            'Team_Att_Def': normalized_values[8],
+            'Fouls_Won': normalized_values[9]
         },
         'Defender': {
-            'Goals': 0.05,
-            'Assists': 0.15,
-            'Shots': 0.10,
-            'Team_Def': 0.60,
-            'Fouls_Won': 0.10
+            'Goals': normalized_values[10],
+            'Assists': normalized_values[11],
+            'Shots': normalized_values[12],
+            'Team_Def': normalized_values[13],
+            'Fouls_Won': normalized_values[14]
         }
     }
 
@@ -117,7 +123,7 @@ def calculate_rating(row, weights):
         return 0
 
 def calculate_max_ratings(df):
-    """Calculate MAX ratings for all players"""
+    """Calculate MAX ratings for all players using optimized weights"""
     weights = get_position_weights()
     
     # Apply the rating calculation

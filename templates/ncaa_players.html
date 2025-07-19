@@ -125,6 +125,14 @@
                 <i class="fas fa-sort"></i>
               {% endif %}
             </th>
+            <th onclick="sortBy('minutes_played')" style="cursor: pointer;" class="{% if current_filters.sort == 'minutes_played' %}table-warning{% endif %}">
+              MP 
+              {% if current_filters.sort == 'minutes_played' %}
+                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
+              {% else %}
+                <i class="fas fa-sort"></i>
+              {% endif %}
+            </th>
             <th onclick="sortBy('goals')" style="cursor: pointer;" class="{% if current_filters.sort == 'goals' %}table-warning{% endif %}">
               Goals 
               {% if current_filters.sort == 'goals' %}
@@ -149,23 +157,8 @@
                 <i class="fas fa-sort"></i>
               {% endif %}
             </th>
-            <th onclick="sortBy('games_played')" style="cursor: pointer;" class="{% if current_filters.sort == 'games_played' %}table-warning{% endif %}">
-              GP 
-              {% if current_filters.sort == 'games_played' %}
-                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
-              {% else %}
-                <i class="fas fa-sort"></i>
-              {% endif %}
-            </th>
-            <th onclick="sortBy('minutes_played')" style="cursor: pointer;" class="{% if current_filters.sort == 'minutes_played' %}table-warning{% endif %}">
-              MP 
-              {% if current_filters.sort == 'minutes_played' %}
-                <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
-              {% else %}
-                <i class="fas fa-sort"></i>
-              {% endif %}
-            </th>
-            <th onclick="sortBy('max')" style="cursor: pointer;" class="{% if current_filters.sort == 'max' %}table-warning{% endif %}">
+            <th onclick="sortBy('max')" style="cursor: pointer;" class="{% if current_filters.sort == 'max' %}table-warning{% endif %}" 
+                title="MAX Rating: Overall performance score (0-100) based on goals, assists, shots, fouls won, and team ATT/DEF ratings, weighted by position and playing time">
               MAX 
               {% if current_filters.sort == 'max' %}
                 <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
@@ -206,6 +199,7 @@
               </span>
               {% endif %}
             </td>
+            <td>{{ player.minutes_played or 0 }}</td>
             <td>
               {% if player.goals > 0 %}
               <span class="badge bg-success">{{ player.goals }}</span>
@@ -221,8 +215,6 @@
               {% endif %}
             </td>
             <td>{{ player.shots or 0 }}</td>
-            <td>{{ player.games_played or 0 }}</td>
-            <td>{{ player.minutes_played or 0 }}</td>
             <td>
               {% if player.max_rating != 'N/A' and player.max_rating != 0 %}
                 <span class="badge 
