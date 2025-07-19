@@ -123,62 +123,24 @@ def show_players():
     
     where_clause = " AND ".join(where_conditions)
     
-    # Build ORDER BY clause
-    valid_sort_columns = {
-        'name': 'name',
-        'team': 'team', 
-        'position': 'position',
-        'goals': 'goals',
-        'assists': 'assists',
-        'shots': 'shots',
-        'goals_per_90': 'CASE WHEN minutes_played > 0 THEN CAST(goals AS FLOAT) / (minutes_played / 90.0) ELSE 0 END',
-        'max': 'name'  # We'll sort by MAX rating in post-processing
-    }
+    # Initialize variables to avoid UnboundLocalError
+    total_players = 0
+    total_pages = 1
+    players = []
+    teams = []
     
-    sort_column = valid_sort_columns.get(sort_by, 'goals')
-    sort_direction = 'DESC' if sort_order == 'desc' else 'ASC'
-    order_clause = f"ORDER BY {sort_column} {sort_direction}, name ASC"
-    
+    # Get distinct teams for filter dropdown (needed for all cases)
     with db.engine.connect() as conn:
-        # Get total count for pagination (with filters)
-        count_query = f"""
-            SELECT COUNT(*) 
+        result = conn.execute(text("""
+            SELECT DISTINCT team
             FROM players
-            WHERE {where_clause}
-        """
-        result = conn.execute(text(count_query), {k: v for k, v in params.items() if k not in ['limit', 'offset']})
-        total_players = result.fetchone()[0]
-        total_pages = math.ceil(total_players / per_page) if total_players > 0 else 1
-        
-        # Get players data with pagination, search, and sorting
-        main_query = f"""
-            SELECT 
-                name,
-                team,
-                position,
-                minutes_played,
-                goals,
-                assists,
-                shots,
-                shots_on_target,
-                fouls_won,
-                CASE 
-                    WHEN shots > 0 THEN ROUND(CAST(shots_on_target AS FLOAT) / shots * 100, 1)
-                    ELSE 0
-                END as shot_accuracy,
-                CASE 
-                    WHEN minutes_played > 0 THEN ROUND(CAST(goals AS FLOAT) / (minutes_played / 90.0), 2)
-                    ELSE 0
-                END as goals_per_90
-            FROM players
-            WHERE {where_clause}
-            {order_clause}
-            LIMIT :limit OFFSET :offset
-        """
-        result = conn.execute(text(main_query), params)
-        players = [dict(row._mapping) for row in result]
-        
-        # Add MAX ratings to players (with error handling for deployment)
+            WHERE team IS NOT NULL
+            ORDER BY team
+        """))
+        teams = [row[0] for row in result]
+    
+    if sort_by == 'max':
+        # We need to get all players first, calculate MAX ratings, then sort and paginate
         try:
             if RATINGS_AVAILABLE:
                 # Load the player ratings data once
@@ -191,31 +153,137 @@ def show_players():
                 # Create a lookup dictionary for MAX ratings
                 max_ratings_dict = dict(zip(merged_df['Name'], merged_df['MAX']))
                 
-                # Add MAX ratings to players
-                for player in players:
+                # Get all players that match the filters (without pagination first)
+                with db.engine.connect() as conn:
+                    all_players_query = f"""
+                        SELECT 
+                            name,
+                            team,
+                            position,
+                            minutes_played,
+                            goals,
+                            assists,
+                            shots,
+                            shots_on_target,
+                            fouls_won,
+                            CASE 
+                                WHEN shots > 0 THEN ROUND(CAST(shots_on_target AS FLOAT) / shots * 100, 1)
+                                ELSE 0
+                            END as shot_accuracy,
+                            CASE 
+                                WHEN minutes_played > 0 THEN ROUND(CAST(goals AS FLOAT) / (minutes_played / 90.0), 2)
+                                ELSE 0
+                            END as goals_per_90
+                        FROM players
+                        WHERE {where_clause}
+                        ORDER BY name ASC
+                    """
+                    result = conn.execute(text(all_players_query), {k: v for k, v in params.items() if k not in ['limit', 'offset']})
+                    all_players = [dict(row._mapping) for row in result]
+                
+                # Add MAX ratings and sort
+                for player in all_players:
                     player['max_rating'] = max_ratings_dict.get(player['name'], 0)
                 
-                # If sorting by MAX rating, re-sort the players list
-                if sort_by == 'max':
-                    players.sort(key=lambda x: x['max_rating'], reverse=(sort_order == 'desc'))
+                # Sort by MAX rating
+                all_players.sort(key=lambda x: x['max_rating'], reverse=(sort_order == 'desc'))
+                
+                # Apply pagination manually
+                total_players = len(all_players)
+                total_pages = math.ceil(total_players / per_page) if total_players > 0 else 1
+                start_idx = offset
+                end_idx = offset + per_page
+                players = all_players[start_idx:end_idx]
+                
             else:
-                # Ratings not available, set to N/A
+                # Fallback if ratings not available
+                raise Exception("Ratings not available")
+                
+        except Exception as e:
+            print(f"Error with MAX rating sort: {e}")
+            # Fallback to regular sorting - continue to else block below
+            sort_by = 'goals'  # Change sort type for fallback
+            
+    if sort_by != 'max':  # Regular sorting (including fallback from MAX rating error)
+        # Build ORDER BY clause
+        valid_sort_columns = {
+            'name': 'name',
+            'team': 'team', 
+            'position': 'position',
+            'goals': 'goals',
+            'assists': 'assists',
+            'shots': 'shots',
+            'goals_per_90': 'CASE WHEN minutes_played > 0 THEN CAST(goals AS FLOAT) / (minutes_played / 90.0) ELSE 0 END',
+        }
+        
+        sort_column = valid_sort_columns.get(sort_by, 'goals')
+        sort_direction = 'DESC' if sort_order == 'desc' else 'ASC'
+        order_clause = f"ORDER BY {sort_column} {sort_direction}, name ASC"
+        
+        with db.engine.connect() as conn:
+            # Get total count for pagination (with filters)
+            count_query = f"""
+                SELECT COUNT(*) 
+                FROM players
+                WHERE {where_clause}
+            """
+            result = conn.execute(text(count_query), {k: v for k, v in params.items() if k not in ['limit', 'offset']})
+            total_players = result.fetchone()[0]
+            total_pages = math.ceil(total_players / per_page) if total_players > 0 else 1
+            
+            # Get players data with pagination, search, and sorting
+            main_query = f"""
+                SELECT 
+                    name,
+                    team,
+                    position,
+                    minutes_played,
+                    goals,
+                    assists,
+                    shots,
+                    shots_on_target,
+                    fouls_won,
+                    CASE 
+                        WHEN shots > 0 THEN ROUND(CAST(shots_on_target AS FLOAT) / shots * 100, 1)
+                        ELSE 0
+                    END as shot_accuracy,
+                    CASE 
+                        WHEN minutes_played > 0 THEN ROUND(CAST(goals AS FLOAT) / (minutes_played / 90.0), 2)
+                        ELSE 0
+                    END as goals_per_90
+                FROM players
+                WHERE {where_clause}
+                {order_clause}
+                LIMIT :limit OFFSET :offset
+            """
+            result = conn.execute(text(main_query), params)
+            players = [dict(row._mapping) for row in result]
+            
+            # Add MAX ratings (with error handling for deployment)
+            try:
+                if RATINGS_AVAILABLE:
+                    # Load the player ratings data once
+                    from player_ratings import load_data, calculate_per90_stats, normalize_stats, calculate_max_ratings
+                    merged_df, _ = load_data()
+                    merged_df = calculate_per90_stats(merged_df)
+                    merged_df = normalize_stats(merged_df)
+                    merged_df = calculate_max_ratings(merged_df)
+                    
+                    # Create a lookup dictionary for MAX ratings
+                    max_ratings_dict = dict(zip(merged_df['Name'], merged_df['MAX']))
+                    
+                    # Add MAX ratings to players
+                    for player in players:
+                        player['max_rating'] = max_ratings_dict.get(player['name'], 0)
+                else:
+                    # Ratings not available, set to N/A
+                    for player in players:
+                        player['max_rating'] = 'N/A'
+                        
+            except Exception as e:
+                print(f"Error loading MAX ratings: {e}")
                 for player in players:
                     player['max_rating'] = 'N/A'
-                    
-        except Exception as e:
-            print(f"Error loading MAX ratings: {e}")
-            for player in players:
-                player['max_rating'] = 'N/A'
-        
-        # Get distinct teams for filter dropdown (all teams, not filtered)
-        result = conn.execute(text("""
-            SELECT DISTINCT team
-            FROM players
-            WHERE team IS NOT NULL
-            ORDER BY team
-        """))
-        teams = [row[0] for row in result]
         
     # Calculate pagination info
     has_prev = page > 1
