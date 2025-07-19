@@ -16,6 +16,7 @@
           <div class="d-flex align-items-center ms-2">
             <img src="{{ url_for('static', filename=get_team_logo_url(player.team)) }}" 
                  alt="{{ player.team }}" 
+                 class="team-logo-dark"
                  style="width: 30px; height: 30px; margin-right: 8px; object-fit: contain;"
                  onerror="this.style.display='none'">
             <span class="badge bg-primary">{{ player.team }}</span>

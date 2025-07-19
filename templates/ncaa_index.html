@@ -90,6 +90,7 @@
             <div class="d-flex align-items-center">
               <img src="{{ url_for('static', filename=get_team_logo_url(team.team)) }}" 
                    alt="{{ team.team }}" 
+                   class="team-logo"
                    style="width: 30px; height: 30px; margin-right: 10px; object-fit: contain;"
                    onerror="this.style.display='none'">
               <strong>{{ team.team }}</strong>

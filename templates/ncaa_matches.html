@@ -38,6 +38,7 @@
               <div class="d-flex align-items-center">
                 <img src="{{ url_for('static', filename=get_team_logo_url(match.home_team)) }}" 
                      alt="{{ match.home_team }}" 
+                     class="team-logo"
                      style="width: 25px; height: 25px; margin-right: 8px; object-fit: contain;"
                      onerror="this.style.display='none'">
                 <strong>{{ match.home_team }}</strong>
@@ -50,6 +51,7 @@
               <div class="d-flex align-items-center">
                 <img src="{{ url_for('static', filename=get_team_logo_url(match.away_team)) }}" 
                      alt="{{ match.away_team }}" 
+                     class="team-logo"
                      style="width: 25px; height: 25px; margin-right: 8px; object-fit: contain;"
                      onerror="this.style.display='none'">
                 <strong>{{ match.away_team }}</strong>
