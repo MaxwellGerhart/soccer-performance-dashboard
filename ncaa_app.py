@@ -4,7 +4,21 @@ from sqlalchemy import text
 import os
 from urllib.parse import unquote
 import math
-from player_ratings import get_player_rating_data, get_team_max_ratings
+
+# Try to import player ratings - handle gracefully if it fails
+try:
+    from player_ratings import get_player_rating_data, get_team_max_ratings
+    RATINGS_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Player ratings module not available: {e}")
+    RATINGS_AVAILABLE = False
+    
+    # Create dummy functions
+    def get_player_rating_data(player_name):
+        return None
+    
+    def get_team_max_ratings():
+        return []
 
 app = Flask(__name__)
 
@@ -164,26 +178,31 @@ def show_players():
         result = conn.execute(text(main_query), params)
         players = [dict(row._mapping) for row in result]
         
-        # Add MAX ratings to players (this might be slow for large result sets, so we'll load them in batches)
+        # Add MAX ratings to players (with error handling for deployment)
         try:
-            # Load the player ratings data once
-            from player_ratings import load_data, calculate_per90_stats, normalize_stats, calculate_max_ratings
-            merged_df, _ = load_data()
-            merged_df = calculate_per90_stats(merged_df)
-            merged_df = normalize_stats(merged_df)
-            merged_df = calculate_max_ratings(merged_df)
-            
-            # Create a lookup dictionary for MAX ratings
-            max_ratings_dict = dict(zip(merged_df['Name'], merged_df['MAX']))
-            
-            # Add MAX ratings to players
-            for player in players:
-                player['max_rating'] = max_ratings_dict.get(player['name'], 0)  # Use 0 instead of 'N/A' for sorting
-            
-            # If sorting by MAX rating, re-sort the players list
-            if sort_by == 'max':
-                players.sort(key=lambda x: x['max_rating'], reverse=(sort_order == 'desc'))
+            if RATINGS_AVAILABLE:
+                # Load the player ratings data once
+                from player_ratings import load_data, calculate_per90_stats, normalize_stats, calculate_max_ratings
+                merged_df, _ = load_data()
+                merged_df = calculate_per90_stats(merged_df)
+                merged_df = normalize_stats(merged_df)
+                merged_df = calculate_max_ratings(merged_df)
                 
+                # Create a lookup dictionary for MAX ratings
+                max_ratings_dict = dict(zip(merged_df['Name'], merged_df['MAX']))
+                
+                # Add MAX ratings to players
+                for player in players:
+                    player['max_rating'] = max_ratings_dict.get(player['name'], 0)
+                
+                # If sorting by MAX rating, re-sort the players list
+                if sort_by == 'max':
+                    players.sort(key=lambda x: x['max_rating'], reverse=(sort_order == 'desc'))
+            else:
+                # Ratings not available, set to N/A
+                for player in players:
+                    player['max_rating'] = 'N/A'
+                    
         except Exception as e:
             print(f"Error loading MAX ratings: {e}")
             for player in players:
@@ -273,9 +292,16 @@ def show_teams():
         """))
         team_standings = [dict(row._mapping) for row in result]
 
-    # Get team MAX ratings
-    team_max_ratings = get_team_max_ratings()
-    max_ratings_dict = {team['Team']: {'MAX': team['MAX'], 'ATT': team['ATT'], 'DEF': team['DEF']} for team in team_max_ratings}
+    # Get team MAX ratings (with error handling)
+    try:
+        if RATINGS_AVAILABLE:
+            team_max_ratings = get_team_max_ratings()
+            max_ratings_dict = {team['Team']: {'MAX': team['MAX'], 'ATT': team['ATT'], 'DEF': team['DEF']} for team in team_max_ratings}
+        else:
+            max_ratings_dict = {}
+    except Exception as e:
+        print(f"Error loading team ratings: {e}")
+        max_ratings_dict = {}
     
     # Add MAX ratings to team standings
     for team in team_standings:
@@ -529,9 +555,16 @@ def team_profile(team_name):
         """), {'team_name': team_name})
         recent_matches = [dict(row._mapping) for row in result]
         
-        # Get team MAX rating
-        team_max_ratings = get_team_max_ratings()
-        team_rating_data = next((team for team in team_max_ratings if team['Team'] == team_name), {'MAX': 'N/A', 'ATT': 'N/A', 'DEF': 'N/A'})
+        # Get team MAX rating (with error handling)
+        try:
+            if RATINGS_AVAILABLE:
+                team_max_ratings = get_team_max_ratings()
+                team_rating_data = next((team for team in team_max_ratings if team['Team'] == team_name), {'MAX': 'N/A', 'ATT': 'N/A', 'DEF': 'N/A'})
+            else:
+                team_rating_data = {'MAX': 'N/A', 'ATT': 'N/A', 'DEF': 'N/A'}
+        except Exception as e:
+            print(f"Error loading team ratings: {e}")
+            team_rating_data = {'MAX': 'N/A', 'ATT': 'N/A', 'DEF': 'N/A'}
         
         # Calculate additional team stats
         team_stats['avg_goals_per_game'] = round(team_stats['goals_for'] / max(team_stats['games_played'], 1), 2)
