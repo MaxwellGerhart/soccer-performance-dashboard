@@ -125,6 +125,7 @@ def show_players():
     search_term = request.args.get('search', '').strip()
     team_filter = request.args.get('team', '').strip()
     position_filter = request.args.get('position', '').strip()
+    conference_filter = request.args.get('conference', '').strip()
     sort_by = request.args.get('sort', 'goals')
     sort_order = request.args.get('order', 'desc')
     
@@ -154,6 +155,10 @@ def show_players():
         where_conditions.append("position = :position")
         params['position'] = mapped_position
     
+    if conference_filter:
+        where_conditions.append("conference = :conference")
+        params['conference'] = conference_filter
+    
     where_clause = " AND ".join(where_conditions)
     
     # Initialize variables to avoid UnboundLocalError
@@ -171,6 +176,15 @@ def show_players():
             ORDER BY team
         """))
         teams = [row[0] for row in result]
+        
+        # Get distinct conferences for filter dropdown
+        result = conn.execute(text("""
+            SELECT DISTINCT conference
+            FROM players
+            WHERE conference IS NOT NULL
+            ORDER BY conference
+        """))
+        conferences = [row[0] for row in result]
     
     if sort_by == 'max':
         # We need to get all players first, calculate MAX ratings, then sort and paginate
@@ -349,9 +363,11 @@ def show_players():
                              'search': search_term,
                              'team': team_filter,
                              'position': position_filter,
+                             'conference': conference_filter,
                              'sort': sort_by,
                              'order': sort_order
-                         })
+                         },
+                         conferences=conferences)
 
 @app.route('/teams')
 def show_teams():

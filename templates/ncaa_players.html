@@ -25,7 +25,26 @@
         </button>
       </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
+      <select name="position" id="positionFilter" class="form-select" onchange="submitForm()">
+        <option value="">All Positions</option>
+        <option value="F" {% if current_filters.position == 'F' %}selected{% endif %}>Forward</option>
+        <option value="M" {% if current_filters.position == 'M' %}selected{% endif %}>Midfielder</option>
+        <option value="D" {% if current_filters.position == 'D' %}selected{% endif %}>Defender</option>
+        <option value="G" {% if current_filters.position == 'G' %}selected{% endif %}>Goalkeeper</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="conference" id="conferenceFilter" class="form-select" onchange="submitForm()">
+        <option value="">All Conferences</option>
+        {% for conference in conferences %}
+        <option value="{{ conference }}" {% if current_filters.conference == conference %}selected{% endif %}>
+          {{ conference }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
       <select name="team" id="teamFilter" class="form-select" onchange="submitForm()">
         <option value="">All Teams</option>
         {% for team in teams %}
@@ -33,15 +52,6 @@
           {{ team }}
         </option>
         {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-3">
-      <select name="position" id="positionFilter" class="form-select" onchange="submitForm()">
-        <option value="">All Positions</option>
-        <option value="F" {% if current_filters.position == 'F' %}selected{% endif %}>Forward</option>
-        <option value="M" {% if current_filters.position == 'M' %}selected{% endif %}>Midfielder</option>
-        <option value="D" {% if current_filters.position == 'D' %}selected{% endif %}>Defender</option>
-        <option value="G" {% if current_filters.position == 'G' %}selected{% endif %}>Goalkeeper</option>
       </select>
     </div>
   </div>
