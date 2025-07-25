@@ -190,15 +190,12 @@ def show_players():
         # We need to get all players first, calculate MAX ratings, then sort and paginate
         try:
             if RATINGS_AVAILABLE:
-                # Load the player ratings data once
-                from player_ratings import load_data, calculate_per90_stats, normalize_stats, calculate_max_ratings
-                merged_df, _ = load_data()
-                merged_df = calculate_per90_stats(merged_df)
-                merged_df = normalize_stats(merged_df)
-                merged_df = calculate_max_ratings(merged_df)
+                # Load the corrected player ratings data from CSV
+                import pandas as pd
+                df = pd.read_csv('data/d1_player_stats.csv')
                 
-                # Create a lookup dictionary for MAX ratings
-                max_ratings_dict = dict(zip(merged_df['Name'], merged_df['MAX']))
+                # Create a lookup dictionary for MAX ratings from the corrected CSV
+                max_ratings_dict = dict(zip(df['Name'], df['MAX']))
                 
                 # Get all players that match the filters (without pagination first)
                 with db.engine.connect() as conn:
@@ -309,15 +306,12 @@ def show_players():
             # Add MAX ratings (with error handling for deployment)
             try:
                 if RATINGS_AVAILABLE:
-                    # Load the player ratings data once
-                    from player_ratings import load_data, calculate_per90_stats, normalize_stats, calculate_max_ratings
-                    merged_df, _ = load_data()
-                    merged_df = calculate_per90_stats(merged_df)
-                    merged_df = normalize_stats(merged_df)
-                    merged_df = calculate_max_ratings(merged_df)
+                    # Load the corrected player ratings data from CSV
+                    import pandas as pd
+                    df = pd.read_csv('data/d1_player_stats.csv')
                     
-                    # Create a lookup dictionary for MAX ratings
-                    max_ratings_dict = dict(zip(merged_df['Name'], merged_df['MAX']))
+                    # Create a lookup dictionary for MAX ratings from the corrected CSV
+                    max_ratings_dict = dict(zip(df['Name'], df['MAX']))
                     
                     # Add MAX ratings to players
                     for player in players:

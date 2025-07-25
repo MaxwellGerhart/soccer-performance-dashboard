@@ -1,4 +1,4 @@
-﻿{% extends "ncaa_layout.html" %}
+{% extends "ncaa_layout.html" %}
 
 {% block content %}
 <div class="mb-3">
@@ -105,21 +105,21 @@
       <span class="badge bg-info">
         Search: "{{ current_filters.search }}"
         <a href="{{ url_for('show_players', team=current_filters.team, position=current_filters.position, sort=current_filters.sort, order=current_filters.order) }}" 
-           class="text-white ms-1" style="text-decoration: none;">Ã—</a>
+           class="text-white ms-1" style="text-decoration: none;">×</a>
       </span>
     {% endif %}
     {% if current_filters.team %}
       <span class="badge bg-primary">
         Team: {{ current_filters.team }}
         <a href="{{ url_for('show_players', search=current_filters.search, position=current_filters.position, sort=current_filters.sort, order=current_filters.order) }}" 
-           class="text-white ms-1" style="text-decoration: none;">Ã—</a>
+           class="text-white ms-1" style="text-decoration: none;">×</a>
       </span>
     {% endif %}
     {% if current_filters.position %}
       <span class="badge bg-success">
         Position: {{ current_filters.position }}
         <a href="{{ url_for('show_players', search=current_filters.search, team=current_filters.team, sort=current_filters.sort, order=current_filters.order) }}" 
-           class="text-white ms-1" style="text-decoration: none;">Ã—</a>
+           class="text-white ms-1" style="text-decoration: none;">×</a>
       </span>
     {% endif %}
     <a href="{{ url_for('show_players') }}" class="btn btn-outline-secondary btn-sm">
@@ -146,7 +146,7 @@
       <table class="table table-striped table-hover" id="playersTable">
         <thead class="table-dark">
           <tr>
-            <th onclick="sortBy('name')" style="cursor: pointer;" class="{% if current_filters.sort == 'name' %}table-warning{% endif %}">
+            <th onclick="alert('Header clicked!'); sortBy('name')" style="cursor: pointer;" class="{% if current_filters.sort == 'name' %}table-warning{% endif %}">
               Player 
               {% if current_filters.sort == 'name' %}
                 <i class="fas fa-sort-{{ 'up' if current_filters.order == 'asc' else 'down' }}"></i>
@@ -377,6 +377,126 @@
   </div>
 </div>
 {% endif %}
+
+<script>
+// Form submission functions
+function submitForm() {
+  alert('submitForm called!');
+  document.getElementById('pageInput').value = '1'; // Reset to first page when filtering
+  document.getElementById('filterForm').submit();
+}
+
+function sortBy(column) {
+  console.log('sortBy called with column:', column);
+  const currentSort = '{{ current_filters.sort }}';
+  const currentOrder = '{{ current_filters.order }}';
+  console.log('Current sort:', currentSort, 'Current order:', currentOrder);
+  
+  let newOrder = 'desc';
+  if (currentSort === column) {
+    newOrder = currentOrder === 'desc' ? 'asc' : 'desc';
+  }
+  
+  console.log('Setting new sort:', column, 'New order:', newOrder);
+  document.getElementById('sortInput').value = column;
+  document.getElementById('orderInput').value = newOrder;
+  document.getElementById('pageInput').value = '1'; // Reset to first page when sorting
+  
+  console.log('Submitting form...');
+  document.getElementById('filterForm').submit();
+}
+
+// Jump to specific page functionality
+function jumpToPage() {
+  const pageInput = document.getElementById('jumpToPageInput');
+  const pageNumber = parseInt(pageInput.value);
+  const maxPages = {% if pagination %}{{ pagination.pages }}{% else %}1{% endif %};
+  
+  if (pageNumber && pageNumber >= 1 && pageNumber <= maxPages) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', pageNumber);
+    window.location.href = url.toString();
+  } else {
+    alert('Please enter a page number between 1 and ' + maxPages);
+  }
+}
+
+// Handle Enter key in search and jump inputs
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('searchInput');
+  const jumpInput = document.getElementById('jumpToPageInput');
+  
+  if (searchInput) {
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        submitForm();
+      }
+    });
+  }
+  
+  if (jumpInput) {
+    jumpInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        jumpToPage();
+      }
+    });
+  }
+  
+  // Season/Date selector functions (for future use)
+  loadSeasonData();
+});
+
+function updateAvailableDates() {
+  const season = document.getElementById('season-select').value;
+  fetch(`/api/dates/${season}`)
+    .then(response => response.json())
+    .then(dates => {
+      const dateSelect = document.getElementById('date-select');
+      dateSelect.innerHTML = '<option value="current">Latest Data</option>';
+      dates.forEach(date => {
+        const option = document.createElement('option');
+        option.value = date.snapshot_date;
+        option.textContent = `${date.snapshot_date} (${date.total_players} players)`;
+        if (date.is_current) option.selected = true;
+        dateSelect.appendChild(option);
+      });
+    })
+    .catch(error => console.error('Error loading dates:', error));
+}
+
+function updatePlayerData() {
+  const season = document.getElementById('season-select').value;
+  const date = document.getElementById('date-select').value;
+  
+  if (date === 'current') {
+    window.location.href = `/players/${season}`;
+  } else {
+    window.location.href = `/players/${season}/${date}`;
+  }
+}
+
+function loadSeasonData() {
+  // Load available seasons and check if we should show the selector
+  fetch('/api/seasons')
+    .then(response => response.json())
+    .then(seasons => {
+      if (seasons.length > 1) {
+        // Show season selector if multiple seasons available
+        document.getElementById('season-controls').style.display = 'block';
+        
+        const seasonSelect = document.getElementById('season-select');
+        seasonSelect.innerHTML = '';
+        seasons.forEach(season => {
+          const option = document.createElement('option');
+          option.value = season.season;
+          option.textContent = season.display_name;
+          if (season.is_active) option.selected = true;
+          seasonSelect.appendChild(option);
+        });
+        
+        // Load dates for current season
+        updateAvailableDates();
+      }
 <!-- External JavaScript file -->
 <script src="{{ url_for('static', filename='players.js') }}"></script>
 

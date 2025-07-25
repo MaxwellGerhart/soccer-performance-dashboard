@@ -18,9 +18,11 @@ def load_data():
     player_df = pd.read_csv('data/d1_player_stats.csv')
     team_df = pd.read_csv('data/ncaa_ratings.csv')
 
-    # Clean up data
-    player_df = player_df.drop(columns=['Unnamed: 0'])
-    team_df = team_df.drop(columns=['Unnamed: 0'])
+    # Clean up data - drop Unnamed columns if they exist
+    if 'Unnamed: 0' in player_df.columns:
+        player_df = player_df.drop(columns=['Unnamed: 0'])
+    if 'Unnamed: 0' in team_df.columns:
+        team_df = team_df.drop(columns=['Unnamed: 0'])
     player_df = player_df[player_df['Position'] != 'Goalkeeper']
     player_df = player_df[player_df['Minutes Played'] >= 300]
 
@@ -62,6 +64,15 @@ def normalize_stats(df):
     df['Team_Minutes_Played_Percentage'] = df.apply(
         lambda row: row['Minutes Played'] / team_minutes[row['Team']], axis=1
     )
+    
+    # FIXED: Create a proper weighting factor for team contributions
+    # Use a sigmoid curve that rewards significant playing time
+    # 300 minutes = minimum, 1200 minutes = substantial contributor, 1800+ = key player
+    df['Team_Impact_Factor'] = 1 / (1 + np.exp(-0.003 * (df['Minutes Played'] - 1200)))
+    
+    # Ensure minimum playing time players (300 mins) still get some team credit but limited
+    df.loc[df['Minutes Played'] < 600, 'Team_Impact_Factor'] *= 0.6  # Reduce impact for limited minutes
+    df.loc[df['Minutes Played'] < 400, 'Team_Impact_Factor'] *= 0.5  # Further reduce for very limited minutes
     
     return df
 
@@ -113,7 +124,7 @@ def calculate_rating(row, weights):
             row['Norm_Assists'] * weights['Forward']['Assists'] +
             row['Norm_Shots'] * weights['Forward']['Shots'] +
             row['Norm_Fouls_Won'] * weights['Forward']['Fouls_Won'] +
-            row['Norm_ATT'] * row['Team_Minutes_Played_Percentage'] * weights['Forward']['Team_Att']
+            row['Norm_ATT'] * row['Team_Impact_Factor'] * weights['Forward']['Team_Att']
         ) * 100
     elif row['Position'] == 'Midfielder':
         return (
@@ -121,7 +132,7 @@ def calculate_rating(row, weights):
             row['Norm_Assists'] * weights['Midfielder']['Assists'] +
             row['Norm_Shots'] * weights['Midfielder']['Shots'] +
             row['Norm_Fouls_Won'] * weights['Midfielder']['Fouls_Won'] +
-            ((row['Norm_ATT'] + row['Norm_DEF']) / 2) * row['Team_Minutes_Played_Percentage'] * weights['Midfielder']['Team_Att_Def']
+            ((row['Norm_ATT'] + row['Norm_DEF']) / 2) * row['Team_Impact_Factor'] * weights['Midfielder']['Team_Att_Def']
         ) * 100
     elif row['Position'] == 'Defender':
         return (
@@ -129,7 +140,7 @@ def calculate_rating(row, weights):
             row['Norm_Assists'] * weights['Defender']['Assists'] +
             row['Norm_Shots'] * weights['Defender']['Shots'] +
             row['Norm_Fouls_Won'] * weights['Defender']['Fouls_Won'] +
-            row['Norm_DEF'] * row['Team_Minutes_Played_Percentage'] * weights['Defender']['Team_Def']
+            row['Norm_DEF'] * row['Team_Impact_Factor'] * weights['Defender']['Team_Def']
         ) * 100
     else:
         # Handle unknown/unrecognized positions with balanced weighting
@@ -138,7 +149,7 @@ def calculate_rating(row, weights):
             row['Norm_Assists'] * weights['Unknown']['Assists'] +
             row['Norm_Shots'] * weights['Unknown']['Shots'] +
             row['Norm_Fouls_Won'] * weights['Unknown']['Fouls_Won'] +
-            ((row['Norm_ATT'] + row['Norm_DEF']) / 2) * row['Team_Minutes_Played_Percentage'] * weights['Unknown']['Team_Att_Def']
+            ((row['Norm_ATT'] + row['Norm_DEF']) / 2) * row['Team_Impact_Factor'] * weights['Unknown']['Team_Att_Def']
         ) * 100
 
 def calculate_max_ratings(df):
