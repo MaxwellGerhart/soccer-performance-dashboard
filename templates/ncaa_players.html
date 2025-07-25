@@ -10,6 +10,41 @@
   </div>
 </div>
 
+<!-- Season/Date Selector (Hidden until 2025 data available) -->
+<div class="season-selector mb-4" style="display: none;" id="season-controls">
+  <div class="card">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <label for="season-select" class="form-label">
+            <i class="fas fa-calendar-alt"></i> Season
+          </label>
+          <select class="form-control" id="season-select" onchange="updateAvailableDates()">
+            <option value="2024">2023-24 Season</option>
+            <option value="2025">2024-25 Season</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label for="date-select" class="form-label">
+            <i class="fas fa-clock"></i> Data Date
+          </label>
+          <select class="form-control" id="date-select" onchange="updatePlayerData()">
+            <option value="current">Latest Data</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Future Season Message -->
+{% if season_message %}
+<div class="alert alert-warning">
+  <i class="fas fa-exclamation-triangle"></i>
+  {{ season_message }}
+</div>
+{% endif %}
+
 <!-- Search and Filter Controls -->
 <form method="GET" id="filterForm">
   <input type="hidden" name="page" value="1" id="pageInput">
@@ -400,6 +435,63 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+  
+  // Season/Date selector functions (for future use)
+  loadSeasonData();
 });
+
+function updateAvailableDates() {
+  const season = document.getElementById('season-select').value;
+  fetch(`/api/dates/${season}`)
+    .then(response => response.json())
+    .then(dates => {
+      const dateSelect = document.getElementById('date-select');
+      dateSelect.innerHTML = '<option value="current">Latest Data</option>';
+      dates.forEach(date => {
+        const option = document.createElement('option');
+        option.value = date.snapshot_date;
+        option.textContent = `${date.snapshot_date} (${date.total_players} players)`;
+        if (date.is_current) option.selected = true;
+        dateSelect.appendChild(option);
+      });
+    })
+    .catch(error => console.error('Error loading dates:', error));
+}
+
+function updatePlayerData() {
+  const season = document.getElementById('season-select').value;
+  const date = document.getElementById('date-select').value;
+  
+  if (date === 'current') {
+    window.location.href = `/players/${season}`;
+  } else {
+    window.location.href = `/players/${season}/${date}`;
+  }
+}
+
+function loadSeasonData() {
+  // Load available seasons and check if we should show the selector
+  fetch('/api/seasons')
+    .then(response => response.json())
+    .then(seasons => {
+      if (seasons.length > 1) {
+        // Show season selector if multiple seasons available
+        document.getElementById('season-controls').style.display = 'block';
+        
+        const seasonSelect = document.getElementById('season-select');
+        seasonSelect.innerHTML = '';
+        seasons.forEach(season => {
+          const option = document.createElement('option');
+          option.value = season.season;
+          option.textContent = season.display_name;
+          if (season.is_active) option.selected = true;
+          seasonSelect.appendChild(option);
+        });
+        
+        // Load dates for current season
+        updateAvailableDates();
+      }
+    })
+    .catch(error => console.error('Error loading seasons:', error));
 </script>
 {% endblock %}

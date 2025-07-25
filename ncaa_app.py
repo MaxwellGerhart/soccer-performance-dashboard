@@ -702,5 +702,124 @@ def team_profile(team_name):
                          roster=[],
                          recent_matches=[])
 
+# Season and Date Management API Endpoints
+@app.route('/api/seasons')
+def get_available_seasons():
+    """Get list of available seasons"""
+    try:
+        with db.engine.connect() as conn:
+            result = conn.execute(text("""
+                SELECT season, display_name, is_active, data_collection_active
+                FROM seasons 
+                ORDER BY season DESC
+            """))
+            seasons = [dict(row._mapping) for row in result]
+            return jsonify(seasons)
+    except Exception as e:
+        print(f"Error fetching seasons: {e}")
+        # Fallback to default 2024 season
+        return jsonify([{
+            'season': '2024',
+            'display_name': '2024-25 Season',
+            'is_active': False,
+            'data_collection_active': False
+        }])
+
+@app.route('/api/dates/<season>')
+def get_available_dates(season):
+    """Get available data dates for a season"""
+    try:
+        with db.engine.connect() as conn:
+            result = conn.execute(text("""
+                SELECT snapshot_date, description, total_players, is_current
+                FROM data_snapshots 
+                WHERE season = ?
+                ORDER BY snapshot_date DESC
+            """), (season,))
+            dates = [dict(row._mapping) for row in result]
+            return jsonify(dates)
+    except Exception as e:
+        print(f"Error fetching dates for season {season}: {e}")
+        # Fallback for 2024 season
+        if season == '2024':
+            return jsonify([{
+                'snapshot_date': '2024-12-31',
+                'description': 'Final 2024 season data',
+                'total_players': 6246,  # Approximate from your current data
+                'is_current': True
+            }])
+        return jsonify([])
+
+@app.route('/api/season-status')
+def get_season_status():
+    """Get current season status and data collection info"""
+    try:
+        with db.engine.connect() as conn:
+            # Get current active season
+            result = conn.execute(text("""
+                SELECT season, display_name, data_collection_active
+                FROM seasons 
+                WHERE is_active = TRUE
+                LIMIT 1
+            """))
+            current_season = result.fetchone()
+            
+            if current_season:
+                current_season = dict(current_season._mapping)
+            else:
+                # Default to 2024 if no active season
+                current_season = {
+                    'season': '2024',
+                    'display_name': '2024-25 Season',
+                    'data_collection_active': False
+                }
+            
+            # Get latest data snapshot for current season
+            result = conn.execute(text("""
+                SELECT snapshot_date, total_players, description
+                FROM data_snapshots 
+                WHERE season = ? AND is_current = TRUE
+                LIMIT 1
+            """), (current_season['season'],))
+            latest_snapshot = result.fetchone()
+            
+            if latest_snapshot:
+                current_season['latest_data'] = dict(latest_snapshot._mapping)
+            
+            return jsonify(current_season)
+    except Exception as e:
+        print(f"Error fetching season status: {e}")
+        return jsonify({
+            'season': '2024',
+            'display_name': '2023-24 Season',
+            'data_collection_active': False,
+            'latest_data': {
+                'snapshot_date': '2024-12-31',
+                'total_players': 6246,
+                'description': 'Final 2024 season data'
+            }
+        })
+
+@app.route('/players/<season>')
+@app.route('/players/<season>/<date>')
+def show_players_historical(season, date='current'):
+    """Show players for specific season/date"""
+    # For now, redirect to regular players page for 2024 season
+    # When 2025 data becomes available, this will handle historical views
+    if season == '2024':
+        return show_players()  # Use existing function for 2024 data
+    else:
+        # Future: Handle 2025 and other seasons
+        # For now, show message that season data isn't available yet
+        return render_template("ncaa_players.html", 
+                             players=[], 
+                             teams=[],
+                             conferences=[],
+                             pagination={'page': 1, 'per_page': 100, 'total': 0, 'pages': 1, 
+                                       'has_prev': False, 'has_next': False, 'prev_num': None, 
+                                       'next_num': None, 'page_numbers': [1], 'start_item': 0, 'end_item': 0},
+                             current_filters={'search': '', 'team': '', 'position': '', 'conference': '', 'sort': 'goals', 'order': 'desc'},
+                             season_message=f"Data for {season} season is not yet available. Data collection will begin when the season starts.")
+
 if __name__ == '__main__':
     app.run(debug=True)

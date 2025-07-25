@@ -54,7 +54,8 @@ def normalize_stats(df):
     df['Norm_Fouls_Won'] = df['Fouls Won_per90'] / df['Fouls Won_per90'].max()
     df['Norm_Minutes_Played'] = df['Minutes Played'] / df['Minutes Played'].max()
     df['Norm_ATT'] = df['ATT'] / df['ATT'].max()
-    df['Norm_DEF'] = df['DEF'] / df['DEF'].max()
+    # FIXED: Invert DEF normalization since lower DEF ratings = better defense
+    df['Norm_DEF'] = (df['DEF'].max() - df['DEF']) / (df['DEF'].max() - df['DEF'].min())
     
     # Calculate team minutes played percentage
     team_minutes = df.groupby('Team')['Minutes Played'].sum()
