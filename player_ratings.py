@@ -77,41 +77,37 @@ def normalize_stats(df):
     return df
 
 def get_position_weights():
-    """Get optimized weights for each position based on MLS draft analysis"""
-    # Optimized weights from minimize() function targeting MLS drafted players
-    normalized_values = [
-        1.22615086e-02, 6.83878282e-03, 4.27845135e-05, 8.95389259e-01, 8.54680422e-02,  # Forward
-        4.99482855e-02, 1.71725289e-02, 6.40188592e-03, 8.22166396e-01, 1.04311327e-01,  # Midfielder
-        1.51994820e-03, 4.78093692e-02, 7.58428390e-02, 7.54410683e-01, 1.20417325e-01   # Defender
-    ]
+    """Get balanced weights that prioritize individual performance over team performance"""
+    # Rebalanced weights to give more credit to individual stats
+    # Goals and assists should be the primary drivers for forwards, not team performance
     
     return {
         'Forward': {
-            'Goals': normalized_values[0],
-            'Assists': normalized_values[1],
-            'Shots': normalized_values[2],
-            'Team_Att': normalized_values[3],
-            'Fouls_Won': normalized_values[4]
+            'Goals': 0.40,           # 40% - Goals are crucial for forwards
+            'Assists': 0.25,         # 25% - Assists show playmaking ability  
+            'Shots': 0.15,           # 15% - Shot volume indicates involvement
+            'Team_Att': 0.15,        # 15% - Team context still matters but not dominant
+            'Fouls_Won': 0.05        # 5% - Drawing fouls helps team
         },
         'Midfielder': {
-            'Goals': normalized_values[5],
-            'Assists': normalized_values[6],
-            'Shots': normalized_values[7],
-            'Team_Att_Def': normalized_values[8],
-            'Fouls_Won': normalized_values[9]
+            'Goals': 0.20,           # 20% - Goals important but not primary role
+            'Assists': 0.30,         # 30% - Assists are key for midfielders
+            'Shots': 0.10,           # 10% - Shot creation matters
+            'Team_Att_Def': 0.30,    # 30% - Team play important for midfielders
+            'Fouls_Won': 0.10        # 10% - Winning fouls in midfield crucial
         },
         'Defender': {
-            'Goals': normalized_values[10],
-            'Assists': normalized_values[11],
-            'Shots': normalized_values[12],
-            'Team_Def': normalized_values[13],
-            'Fouls_Won': normalized_values[14]
+            'Goals': 0.10,           # 10% - Goals less important for defenders
+            'Assists': 0.15,         # 15% - Assists show attacking contribution
+            'Shots': 0.05,           # 5% - Limited shooting role
+            'Team_Def': 0.60,        # 60% - Defense is primary responsibility
+            'Fouls_Won': 0.10        # 10% - Drawing fouls helps team
         },
         'Unknown': {
-            'Goals': 0.15,  # Balanced weighting
-            'Assists': 0.15,
+            'Goals': 0.20,           # Balanced weighting for unknown positions
+            'Assists': 0.20,
             'Shots': 0.15,
-            'Team_Att_Def': 0.45,  # Emphasis on team performance
+            'Team_Att_Def': 0.35,    # Still important but not overwhelming
             'Fouls_Won': 0.10
         }
     }
