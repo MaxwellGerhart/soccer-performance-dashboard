@@ -1,0 +1,504 @@
+{% extends "ncaa_layout.html" %}
+
+{% block title %}Match Odds Predictor - America Scouted{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-calculator text-primary"></i> Match Odds Predictor</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+                        <li class="breadcrumb-item active">Match Odds</li>
+                    </ol>
+                </nav>
+            </div>
+
+            <!-- Team Selection -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-futbol"></i> Select Teams</h5>
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <label for="homeTeam" class="form-label">Home Team</label>
+                                    <select class="form-select" id="homeTeam">
+                                        <option value="">Select Home Team...</option>
+                                        {% for team in teams %}
+                                        <option value="{{ team }}">{{ team }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2 text-center d-flex align-items-end justify-content-center">
+                                    <button class="btn btn-primary" id="predictBtn" disabled>
+                                        <i class="fas fa-chart-line"></i> Predict
+                                    </button>
+                                </div>
+                                <div class="col-md-5">
+                                    <label for="awayTeam" class="form-label">Away Team</label>
+                                    <select class="form-select" id="awayTeam">
+                                        <option value="">Select Away Team...</option>
+                                        {% for team in teams %}
+                                        <option value="{{ team }}">{{ team }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="text-center mb-4" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Calculating match probabilities...</p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" style="display: none;">
+                <!-- Team Ratings Comparison -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-bar"></i> Team Ratings Comparison</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <h6 id="homeTeamName" class="text-center"></h6>
+                                        <div class="text-center mb-3">
+                                            <span class="badge bg-primary fs-6" id="homeTeamMAX"></span>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="text-center">
+                                                    <small class="text-muted">Attack</small>
+                                                    <div class="h5" id="homeTeamATT"></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="text-center">
+                                                    <small class="text-muted">Defense</small>
+                                                    <div class="h5" id="homeTeamDEF"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 text-center d-flex align-items-center justify-content-center">
+                                        <h3 class="text-muted">VS</h3>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <h6 id="awayTeamName" class="text-center"></h6>
+                                        <div class="text-center mb-3">
+                                            <span class="badge bg-secondary fs-6" id="awayTeamMAX"></span>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="text-center">
+                                                    <small class="text-muted">Attack</small>
+                                                    <div class="h5" id="awayTeamATT"></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="text-center">
+                                                    <small class="text-muted">Defense</small>
+                                                    <div class="h5" id="awayTeamDEF"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Match Probabilities -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-percentage"></i> Match Probabilities</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3 border rounded">
+                                            <h6 class="text-primary">Home Win</h6>
+                                            <div class="h2" id="homeWinProb"></div>
+                                            <div class="progress mt-2">
+                                                <div class="progress-bar bg-primary" id="homeWinBar" role="progressbar"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3 border rounded">
+                                            <h6 class="text-warning">Draw</h6>
+                                            <div class="h2" id="drawProb"></div>
+                                            <div class="progress mt-2">
+                                                <div class="progress-bar bg-warning" id="drawBar" role="progressbar"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3 border rounded">
+                                            <h6 class="text-secondary">Away Win</h6>
+                                            <div class="h2" id="awayWinProb"></div>
+                                            <div class="progress mt-2">
+                                                <div class="progress-bar bg-secondary" id="awayWinBar" role="progressbar"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expected Goals and Predictions -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-bullseye"></i> Expected Goals</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="text-center">
+                                            <h6 class="text-primary">Home</h6>
+                                            <div class="h3" id="homeExpectedGoals"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center">
+                                            <h6 class="text-secondary">Away</h6>
+                                            <div class="h3" id="awayExpectedGoals"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-trophy"></i> Most Likely Score</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="text-center">
+                                    <div class="h2" id="mostLikelyScore"></div>
+                                    <div class="text-muted" id="mostLikelyProb"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Over/Under -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-line"></i> Over/Under 2.5 Goals</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="text-center p-3 border rounded">
+                                            <h6 class="text-success">Over 2.5</h6>
+                                            <div class="h3" id="over25Prob"></div>
+                                            <div class="progress mt-2">
+                                                <div class="progress-bar bg-success" id="over25Bar" role="progressbar"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="text-center p-3 border rounded">
+                                            <h6 class="text-danger">Under 2.5</h6>
+                                            <div class="h3" id="under25Prob"></div>
+                                            <div class="progress mt-2">
+                                                <div class="progress-bar bg-danger" id="under25Bar" role="progressbar"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scoreline Matrix Heatmap -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-th"></i> Scoreline Probability Matrix</h5>
+                                <small class="text-muted">Probability (%) for each possible scoreline</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm text-center" id="scorelineMatrix">
+                                        <thead>
+                                            <tr>
+                                                <th></th>
+                                                <th colspan="6" class="text-center border-bottom">Away Team Goals</th>
+                                            </tr>
+                                            <tr>
+                                                <th>Home ↓ / Away →</th>
+                                                <th>0</th>
+                                                <th>1</th>
+                                                <th>2</th>
+                                                <th>3</th>
+                                                <th>4</th>
+                                                <th>5+</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="scorelineMatrixBody">
+                                            <!-- Matrix will be populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <small class="text-muted">
+                                        <span class="badge" style="background-color: #721c24; color: white;">8%+</span> Very High
+                                        <span class="badge ms-2" style="background-color: #dc3545; color: white;">4-8%</span> High
+                                        <span class="badge ms-2" style="background-color: #ffc107; color: black;">1.5-4%</span> Medium
+                                        <span class="badge ms-2" style="background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6;">< 1.5%</span> Low
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="alert alert-danger" style="display: none;" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> <span id="errorText"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.heatmap-cell {
+    width: 60px;
+    height: 40px;
+    line-height: 40px;
+    border: 1px solid #dee2e6 !important;
+    font-weight: bold;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.heatmap-high {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.heatmap-medium {
+    background-color: #ffc107 !important;
+    color: black !important;
+}
+
+.heatmap-low {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+}
+
+.heatmap-very-high {
+    background-color: #721c24 !important;
+    color: white !important;
+}
+
+.progress {
+    height: 10px;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+#scorelineMatrix td {
+    padding: 0 !important;
+}
+
+#scorelineMatrix th {
+    text-align: center;
+    vertical-align: middle;
+    background-color: #e9ecef;
+    font-weight: bold;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const homeTeamSelect = document.getElementById('homeTeam');
+    const awayTeamSelect = document.getElementById('awayTeam');
+    const predictBtn = document.getElementById('predictBtn');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const resultsSection = document.getElementById('resultsSection');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // Enable predict button only when both teams are selected
+    function checkSelections() {
+        const homeTeam = homeTeamSelect.value;
+        const awayTeam = awayTeamSelect.value;
+        
+        if (homeTeam && awayTeam && homeTeam !== awayTeam) {
+            predictBtn.disabled = false;
+        } else {
+            predictBtn.disabled = true;
+        }
+    }
+
+    homeTeamSelect.addEventListener('change', checkSelections);
+    awayTeamSelect.addEventListener('change', checkSelections);
+
+    // Predict button click handler
+    predictBtn.addEventListener('click', function() {
+        const homeTeam = homeTeamSelect.value;
+        const awayTeam = awayTeamSelect.value;
+
+        if (!homeTeam || !awayTeam) {
+            showError('Please select both home and away teams.');
+            return;
+        }
+
+        if (homeTeam === awayTeam) {
+            showError('Home and away teams must be different.');
+            return;
+        }
+
+        // Show loading, hide results and errors
+        loadingIndicator.style.display = 'block';
+        resultsSection.style.display = 'none';
+        errorMessage.style.display = 'none';
+
+        // Make API call
+        fetch(`/api/predict-match?home_team=${encodeURIComponent(homeTeam)}&away_team=${encodeURIComponent(awayTeam)}`)
+            .then(response => response.json())
+            .then(data => {
+                loadingIndicator.style.display = 'none';
+                
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    displayResults(data);
+                }
+            })
+            .catch(error => {
+                loadingIndicator.style.display = 'none';
+                showError('An error occurred while predicting the match. Please try again.');
+                console.error('Error:', error);
+            });
+    });
+
+    function showError(message) {
+        document.getElementById('errorText').textContent = message;
+        errorMessage.style.display = 'block';
+        resultsSection.style.display = 'none';
+    }
+
+    function displayResults(data) {
+        // Team ratings
+        document.getElementById('homeTeamName').textContent = data.home_team + ' (Home)';
+        document.getElementById('awayTeamName').textContent = data.away_team + ' (Away)';
+        document.getElementById('homeTeamMAX').textContent = `MAX: ${data.home_team_rating.max}`;
+        document.getElementById('awayTeamMAX').textContent = `MAX: ${data.away_team_rating.max}`;
+        document.getElementById('homeTeamATT').textContent = data.home_team_rating.att;
+        document.getElementById('homeTeamDEF').textContent = data.home_team_rating.def;
+        document.getElementById('awayTeamATT').textContent = data.away_team_rating.att;
+        document.getElementById('awayTeamDEF').textContent = data.away_team_rating.def;
+
+        // Probabilities
+        document.getElementById('homeWinProb').textContent = `${data.probabilities.home_win}%`;
+        document.getElementById('drawProb').textContent = `${data.probabilities.draw}%`;
+        document.getElementById('awayWinProb').textContent = `${data.probabilities.away_win}%`;
+
+        // Progress bars
+        document.getElementById('homeWinBar').style.width = `${data.probabilities.home_win}%`;
+        document.getElementById('drawBar').style.width = `${data.probabilities.draw}%`;
+        document.getElementById('awayWinBar').style.width = `${data.probabilities.away_win}%`;
+
+        // Expected goals
+        document.getElementById('homeExpectedGoals').textContent = data.expected_goals.home;
+        document.getElementById('awayExpectedGoals').textContent = data.expected_goals.away;
+
+        // Most likely score
+        document.getElementById('mostLikelyScore').textContent = 
+            `${data.most_likely_score.home} - ${data.most_likely_score.away}`;
+        document.getElementById('mostLikelyProb').textContent = 
+            `${data.most_likely_score.probability}% probability`;
+
+        // Over/Under
+        document.getElementById('over25Prob').textContent = `${data.over_under.over_2_5}%`;
+        document.getElementById('under25Prob').textContent = `${data.over_under.under_2_5}%`;
+        document.getElementById('over25Bar').style.width = `${data.over_under.over_2_5}%`;
+        document.getElementById('under25Bar').style.width = `${data.over_under.under_2_5}%`;
+
+        // Scoreline matrix
+        createScorelineMatrix(data.scoreline_matrix);
+
+        // Show results
+        resultsSection.style.display = 'block';
+    }
+
+    function createScorelineMatrix(matrix) {
+        const tbody = document.getElementById('scorelineMatrixBody');
+        tbody.innerHTML = '';
+
+        for (let homeGoals = 0; homeGoals < 6; homeGoals++) {
+            const row = document.createElement('tr');
+            
+            // Row header (home goals)
+            const headerCell = document.createElement('th');
+            headerCell.textContent = homeGoals;
+            headerCell.className = 'text-center';
+            row.appendChild(headerCell);
+
+            // Probability cells
+            for (let awayGoals = 0; awayGoals < 6; awayGoals++) {
+                const cell = document.createElement('td');
+                const probability = matrix[homeGoals][awayGoals];
+                
+                cell.textContent = probability.toFixed(1) + '%';
+                cell.className = 'heatmap-cell';
+                
+                // Color coding based on probability with better thresholds
+                if (probability >= 8) {
+                    cell.classList.add('heatmap-very-high');
+                } else if (probability >= 4) {
+                    cell.classList.add('heatmap-high');
+                } else if (probability >= 1.5) {
+                    cell.classList.add('heatmap-medium');
+                } else {
+                    cell.classList.add('heatmap-low');
+                }
+                
+                // Add a title for hover tooltip
+                cell.title = `${homeGoals}-${awayGoals}: ${probability.toFixed(2)}%`;
+                
+                row.appendChild(cell);
+            }
+            
+            tbody.appendChild(row);
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,7 @@
+<!-- External JavaScript file -->
+<script src="{{ url_for('static', filename='players.js') }}"></script>
+
+<!-- Add data attribute for max pages -->
+<div data-max-pages="{{ pagination.pages }}" style="display: none;"></div>
+
+{% endblock %}

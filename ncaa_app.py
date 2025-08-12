@@ -744,6 +744,173 @@ def get_available_dates(season):
             }])
         return jsonify([])
 
+@app.route('/match-odds')
+def match_odds():
+    """Match odds predictor page"""
+    # Get all teams for the dropdowns
+    with db.engine.connect() as conn:
+        result = conn.execute(text("""
+            SELECT DISTINCT team
+            FROM players
+            WHERE team IS NOT NULL
+            ORDER BY team
+        """))
+        teams = [row[0] for row in result]
+    
+    return render_template("match_odds.html", teams=teams)
+
+@app.route('/api/predict-match')
+def predict_match():
+    """API endpoint to predict match outcome between two teams"""
+    home_team = request.args.get('home_team')
+    away_team = request.args.get('away_team')
+    
+    if not home_team or not away_team:
+        return jsonify({'error': 'Both home_team and away_team are required'}), 400
+    
+    if home_team == away_team:
+        return jsonify({'error': 'Home and away teams must be different'}), 400
+    
+    try:
+        # Get team ratings
+        if RATINGS_AVAILABLE:
+            team_ratings = get_team_max_ratings()
+            team_ratings_dict = {team['Team']: team for team in team_ratings}
+            
+            home_team_data = team_ratings_dict.get(home_team)
+            away_team_data = team_ratings_dict.get(away_team)
+            
+            if not home_team_data or not away_team_data:
+                return jsonify({'error': 'Team ratings not found for one or both teams'}), 404
+            
+            # Calculate match predictions using team ATT and DEF ratings
+            prediction = calculate_match_prediction(home_team_data, away_team_data)
+            
+            return jsonify(prediction)
+        else:
+            return jsonify({'error': 'Rating system not available'}), 503
+            
+    except Exception as e:
+        print(f"Error predicting match: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+def calculate_match_prediction(home_team, away_team):
+    """Calculate match prediction probabilities and expected scoreline"""
+    import math
+    import numpy as np
+    
+    # Get team ratings
+    home_att = home_team['ATT']
+    home_def = home_team['DEF'] 
+    away_att = away_team['ATT']
+    away_def = away_team['DEF']
+    
+    # Calculate expected goals using Poisson model
+    # Home advantage factor (typically 1.1-1.3 in soccer)
+    home_advantage = 1.2
+    
+    # Expected goals = (Team ATT / League Avg ATT) * (Opponent DEF / League Avg DEF) * League Avg Goals * Home Advantage
+    league_avg_goals = 1.5  # Typical college soccer average
+    
+    # Calculate expected goals for each team
+    home_expected_goals = (home_att / 1.0) * (away_def / 1.0) * league_avg_goals * home_advantage
+    away_expected_goals = (away_att / 1.0) * (home_def / 1.0) * league_avg_goals
+    
+    # Ensure reasonable bounds
+    home_expected_goals = max(0.1, min(5.0, home_expected_goals))
+    away_expected_goals = max(0.1, min(5.0, away_expected_goals))
+    
+    # Calculate probabilities using Poisson distribution
+    def poisson_prob(k, lam):
+        return (math.e ** (-lam)) * (lam ** k) / math.factorial(k)
+    
+    # Calculate scoreline probabilities matrix (0-5 goals each)
+    max_goals = 6
+    scoreline_matrix = []
+    total_prob = 0
+    
+    home_win_prob = 0
+    away_win_prob = 0
+    draw_prob = 0
+    
+    for home_goals in range(max_goals):
+        row = []
+        for away_goals in range(max_goals):
+            prob = poisson_prob(home_goals, home_expected_goals) * poisson_prob(away_goals, away_expected_goals)
+            row.append(prob)
+            total_prob += prob
+            
+            if home_goals > away_goals:
+                home_win_prob += prob
+            elif away_goals > home_goals:
+                away_win_prob += prob
+            else:
+                draw_prob += prob
+        scoreline_matrix.append(row)
+    
+    # Normalize probabilities to ensure they sum to 1
+    if total_prob > 0:
+        scoreline_matrix = [[prob/total_prob for prob in row] for row in scoreline_matrix]
+        home_win_prob /= total_prob
+        away_win_prob /= total_prob
+        draw_prob /= total_prob
+    
+    # Find most likely scoreline
+    max_prob = 0
+    most_likely_score = (1, 1)
+    for i, row in enumerate(scoreline_matrix):
+        for j, prob in enumerate(row):
+            if prob > max_prob:
+                max_prob = prob
+                most_likely_score = (i, j)
+    
+    # Calculate over/under probabilities
+    total_goals_prob = {}
+    for total_goals in range(0, 8):
+        prob = 0
+        for home_goals in range(max_goals):
+            for away_goals in range(max_goals):
+                if home_goals + away_goals == total_goals:
+                    prob += scoreline_matrix[home_goals][away_goals]
+        total_goals_prob[total_goals] = prob
+    
+    over_2_5 = sum(total_goals_prob.get(i, 0) for i in range(3, 8))
+    under_2_5 = 1 - over_2_5
+    
+    return {
+        'home_team': home_team['Team'],
+        'away_team': away_team['Team'],
+        'home_team_rating': {
+            'att': round(home_att, 2),
+            'def': round(home_def, 2),
+            'max': round(home_team['MAX'], 1)
+        },
+        'away_team_rating': {
+            'att': round(away_att, 2),
+            'def': round(away_def, 2),
+            'max': round(away_team['MAX'], 1)
+        },
+        'probabilities': {
+            'home_win': round(home_win_prob * 100, 1),
+            'draw': round(draw_prob * 100, 1),
+            'away_win': round(away_win_prob * 100, 1)
+        },
+        'expected_goals': {
+            'home': round(home_expected_goals, 2),
+            'away': round(away_expected_goals, 2)
+        },
+        'most_likely_score': {
+            'home': most_likely_score[0],
+            'away': most_likely_score[1],
+            'probability': round(max_prob * 100, 1)
+        },
+        'over_under': {
+            'over_2_5': round(over_2_5 * 100, 1),
+            'under_2_5': round(under_2_5 * 100, 1)
+        },
+        'scoreline_matrix': [[round(prob * 100, 2) for prob in row] for row in scoreline_matrix]
+    }
+
 @app.route('/api/season-status')
 def get_season_status():
     """Get current season status and data collection info"""
