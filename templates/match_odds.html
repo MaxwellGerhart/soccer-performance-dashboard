@@ -32,10 +32,15 @@
                                         {% endfor %}
                                     </select>
                                 </div>
-                                <div class="col-md-2 text-center d-flex align-items-end justify-content-center">
-                                    <button class="btn btn-primary" id="predictBtn" disabled>
-                                        <i class="fas fa-chart-line"></i> Predict
-                                    </button>
+                                <div class="col-md-2 text-center d-flex align-items-center justify-content-center">
+                                    <div class="d-flex flex-column align-items-center gap-2">
+                                        <button class="btn btn-outline-secondary btn-sm" id="swapBtn" title="Swap teams">
+                                            <i class="fas fa-exchange-alt"></i>
+                                        </button>
+                                        <button class="btn btn-primary" id="predictBtn" disabled>
+                                            <i class="fas fa-chart-line"></i> Predict
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="col-md-5">
                                     <label for="awayTeam" class="form-label">Away Team</label>
@@ -343,6 +348,41 @@
     background-color: #e9ecef;
     font-weight: bold;
 }
+
+#swapBtn {
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+#swapBtn:hover {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+    transform: rotate(180deg);
+}
+
+#predictBtn {
+    min-width: 100px;
+}
+
+.d-flex.flex-column.align-items-center.gap-2 {
+    gap: 0.75rem !important;
+    height: 100%;
+    justify-content: center;
+}
+
+.col-md-2 {
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 </style>
 
 <script>
@@ -350,6 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const homeTeamSelect = document.getElementById('homeTeam');
     const awayTeamSelect = document.getElementById('awayTeam');
     const predictBtn = document.getElementById('predictBtn');
+    const swapBtn = document.getElementById('swapBtn');
     const loadingIndicator = document.getElementById('loadingIndicator');
     const resultsSection = document.getElementById('resultsSection');
     const errorMessage = document.getElementById('errorMessage');
@@ -368,6 +409,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     homeTeamSelect.addEventListener('change', checkSelections);
     awayTeamSelect.addEventListener('change', checkSelections);
+
+    // Swap button functionality
+    swapBtn.addEventListener('click', function() {
+        const homeTeam = homeTeamSelect.value;
+        const awayTeam = awayTeamSelect.value;
+        
+        // Swap the values
+        homeTeamSelect.value = awayTeam;
+        awayTeamSelect.value = homeTeam;
+        
+        // Re-check selections after swap
+        checkSelections();
+        
+        // Add visual feedback
+        swapBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i>';
+        setTimeout(() => {
+            swapBtn.innerHTML = '<i class="fas fa-exchange-alt"></i>';
+        }, 300);
+    });
 
     // Predict button click handler
     predictBtn.addEventListener('click', function() {
