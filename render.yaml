@@ -4,7 +4,7 @@ services:
     env: python
     runtime: python
     buildCommand: "python -m pip install --upgrade pip setuptools wheel && python -m pip install --prefer-binary -r requirements.txt"
-    startCommand: "python start.py"
+  startCommand: "python scripts/collect_weekly.py 2025 && python start.py"
     plan: free
     region: oregon
     envVars:
