@@ -48,12 +48,39 @@ def get_team_logo_url(team_name):
 def utility_processor():
     return dict(get_team_logo_url=get_team_logo_url)
 
-# SQLite DB setup for NCAA data
+# SQLite DB setup for NCAA data (allow override via env)
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'data', 'ncaa_soccer.db')}"
+db_path = os.getenv('NCAA_DB_PATH', os.path.join(basedir, 'data', 'ncaa_soccer.db'))
+db_uri = 'sqlite:///' + db_path.replace('\\', '/')
+app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# Optional: admin endpoint to trigger data collection on the same service/disk
+@app.route('/admin/run-weekly', methods=['GET', 'POST'])
+def admin_run_weekly():
+    token = request.args.get('token') or request.headers.get('X-Admin-Token')
+    expected = os.getenv('ADMIN_TOKEN')
+    if not expected or token != expected:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+
+    season = request.args.get('season', os.getenv('SEASON', '2025'))
+    force = request.args.get('force', 'false').lower() in ('1', 'true', 'yes')
+
+    try:
+        from weekly_data_manager import SeasonDataManager
+        mgr = SeasonDataManager()
+        if force:
+            try:
+                mgr.activate_season(season)
+            except Exception as e:
+                print(f"Admin force activate failed: {e}")
+        ok = mgr.run_weekly_collection(season)
+        return jsonify({"ok": bool(ok), "season": season})
+    except Exception as e:
+        print(f"Admin run-weekly failed: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route('/')
 def home():

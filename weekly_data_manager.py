@@ -11,7 +11,13 @@ from ncaa_data_collector import NCAADataCollector
 
 class SeasonDataManager:
     def __init__(self):
-        self.db_path = 'data/ncaa_soccer.db'
+        # Allow overriding the DB path (e.g., to a Render persistent disk)
+        self.db_path = os.getenv('NCAA_DB_PATH', 'data/ncaa_soccer.db')
+        try:
+            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        except Exception:
+            # If dirname is empty or not creatable, ignore
+            pass
         
     def get_db_connection(self):
         """Get database connection"""

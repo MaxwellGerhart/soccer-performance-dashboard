@@ -14,3 +14,30 @@ services:
         value: "false"
       - key: PIP_PREFER_BINARY
         value: "1"
+      - key: NCAA_DB_PATH
+        value: /var/data/ncaa_soccer.db
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
+
+  - type: cron
+    name: ncaa-weekly-collector
+    env: python
+    runtime: python
+    schedule: "0 9 * * *"  # 09:00 UTC daily; adjust as needed
+    buildCommand: "python -m pip install --upgrade pip setuptools wheel && python -m pip install --prefer-binary -r requirements.txt"
+    startCommand: "python scripts/collect_weekly.py 2025"
+    plan: free
+    region: oregon
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: NCAA_DB_PATH
+        value: /var/data/ncaa_soccer.db
+      - key: SEASON
+        value: "2025"
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
